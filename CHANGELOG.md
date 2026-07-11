@@ -1,7 +1,9 @@
 # CHANGELOG
 
-## v0.6.2
-- Corrección de error de sintaxis que impedía cargar el catálogo.
-- Inicialización resiliente de la aplicación.
-- Mensaje de error cuando falta `gre-data.js`.
-- Nueva versión de caché del service worker.
+## v0.7
+- Selector preliminar de EPP HazMat.
+- Reglas específicas para siete números ONU.
+- Evaluación de atmósfera, tarea y contacto.
+- Niveles A/B/C orientativos.
+- Guardado, copia y exportación JSON.
+- Integración con reporte del incidente.

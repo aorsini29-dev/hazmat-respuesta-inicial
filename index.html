@@ -93,6 +93,18 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
  header{left:240px}
 }
 
+
+.ppe-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ppe-result{border-radius:14px;padding:14px;background:#f7f9fb;border:1px solid #d8e0e7}
+.ppe-level{font-size:1.35rem;font-weight:900;margin:4px 0 8px}
+.ppe-list{display:grid;gap:7px;margin-top:10px}
+.ppe-item{padding:9px;border-radius:10px;background:#fff;border:1px solid #e1e6eb;font-size:.84rem;line-height:1.35}
+.ppe-item strong{display:block;margin-bottom:2px}
+.missing{background:#fff8e1;border-left:5px solid #f9a825}
+.stop{background:#ffebee;border-left:5px solid #c62828}
+.good{background:#e8f5e9;border-left:5px solid #2e7d32}
+@media(max-width:700px){.ppe-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -101,7 +113,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
   <button id="menuBtn" class="menu-btn" aria-label="Abrir menú">☰</button>
   <div class="header-title">
     <h1>HazMat Respuesta Inicial</h1>
-    <div class="sub">v0.6.2 · Hotfix catálogo</div>
+    <div class="sub">v0.7 · Selector de EPP HazMat</div>
   </div>
   <div id="statusBar" class="status-strip">Sin incidente activo</div>
 </header>
@@ -117,6 +129,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
     <button class="tab" data-view="mapview">🗺️ Mapa</button>
     <button class="tab" data-view="ics">👨‍🚒 Comando</button>
     <button class="tab" data-view="operations">🚒 Operaciones</button>
+<button class="tab" data-view="ppe">🧤 Selector de EPP</button>
     <button class="tab" data-view="tactical">📍 Táctico</button>
     <button class="tab" data-view="tools">🧮 Herramientas</button>
     <button class="tab" data-view="reports">📄 Reportes</button>
@@ -328,6 +341,113 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
 </div>
 </section>
 
+
+
+<section id="ppe" class="view">
+<div class="card">
+<h2>Selector preliminar de EPP HazMat</h2>
+<div class="warning">
+La recomendación es conservadora y orientativa. No constituye una autorización de ingreso. Debe confirmarse con monitoreo, compatibilidad química del fabricante, evaluación del riesgo, competencia del personal y decisión del Comando.
+</div>
+<div class="ppe-grid" style="margin-top:10px">
+<div>
+<label>Sustancia seleccionada</label>
+<input id="ppeSubstance" readonly placeholder="Se completa desde el incidente activo">
+</div>
+<div>
+<label>Número ONU</label>
+<input id="ppeUN" readonly>
+</div>
+<div>
+<label>Tarea</label>
+<select id="ppeTask">
+<option value="recon">Reconocimiento / identificación</option>
+<option value="monitoring">Monitoreo atmosférico</option>
+<option value="rescue">Rescate en zona contaminada</option>
+<option value="control">Control directo de fuga</option>
+<option value="decon">Descontaminación</option>
+<option value="support">Apoyo en zona fría</option>
+</select>
+</div>
+<div>
+<label>Estado predominante</label>
+<select id="ppeState">
+<option value="gas">Gas / vapor</option>
+<option value="liquid">Líquido</option>
+<option value="aerosol">Aerosol / niebla</option>
+<option value="solid">Sólido / partículas</option>
+<option value="unknown">Desconocido</option>
+</select>
+</div>
+<div>
+<label>Concentración</label>
+<select id="ppeConcentration">
+<option value="unknown">Desconocida</option>
+<option value="idlhorhigher">IDLH o potencialmente IDLH</option>
+<option value="knownbelow">Conocida y por debajo de IDLH</option>
+<option value="nonhazardous">No peligrosa confirmada</option>
+</select>
+</div>
+<div>
+<label>Oxígeno atmosférico</label>
+<select id="ppeOxygen">
+<option value="unknown">Desconocido</option>
+<option value="deficient">Deficiente (&lt;19,5 %)</option>
+<option value="normal">Normal confirmado</option>
+</select>
+</div>
+<div>
+<label>Tipo de contacto esperado</label>
+<select id="ppeContact">
+<option value="vapor">Vapor / gas</option>
+<option value="splash">Salpicadura</option>
+<option value="immersion">Inmersión / contacto prolongado</option>
+<option value="particles">Partículas</option>
+<option value="unknown">Desconocido</option>
+</select>
+</div>
+<div>
+<label>Incendio o calor intenso</label>
+<select id="ppeFire">
+<option value="no">No</option>
+<option value="yes">Sí</option>
+<option value="unknown">Desconocido</option>
+</select>
+</div>
+<div>
+<label>Compatibilidad del traje y guantes</label>
+<select id="ppeCompatibility">
+<option value="unknown">No verificada</option>
+<option value="verified">Verificada con fabricante</option>
+<option value="incompatible">Incompatible / dudosa</option>
+</select>
+</div>
+<div>
+<label>Monitoreo previo</label>
+<select id="ppeMonitoring">
+<option value="none">No realizado</option>
+<option value="partial">Parcial / insuficiente</option>
+<option value="complete">Completo y representativo</option>
+</select>
+</div>
+</div>
+<div class="actions" style="margin-top:10px">
+<button class="primary" id="calculatePPE">Evaluar EPP</button>
+<button class="secondary" id="savePPE">Guardar evaluación</button>
+</div>
+</div>
+
+<div class="card">
+<h2>Resultado</h2>
+<div id="ppeResult" class="ppe-result">
+<p class="small">Complete las condiciones y seleccione “Evaluar EPP”.</p>
+</div>
+<div class="actions" style="margin-top:10px">
+<button class="secondary" id="exportPPE">Exportar JSON</button>
+<button class="secondary" id="copyPPE">Copiar resumen</button>
+</div>
+</div>
+</section>
 
 <section id="tactical" class="view">
 <div class="card">

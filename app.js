@@ -16,7 +16,7 @@ function showView(id){
  if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current){renderMap();renderTacticalMarkers();applyTacticalZones(false)}},100);
  if(id==='history')renderHistory();
  if(id==='ics')loadICSView();
- if(id==='operations')loadOperations();
+ if(id==='operations')loadOperations();if(id==='ppe')loadPPE();
  if(id==='reports')buildReport();
  if(id==='tactical')loadTactical();
 }
@@ -321,7 +321,7 @@ function tableRows(items,cols){
 }
 function buildReport(){
  if(!$('reportPreview'))return;
- const inc=current,ics=getICSPlan(),ops=getOps()||collectOperations();
+ const inc=current,ics=getICSPlan(),ops=getOps()||collectOperations(),ppe=getSavedPPE();
  const author=$('reportAuthor')?.value||'',status=$('incidentStatus')?.value||'En evaluación';
  const conclusion=$('reportConclusion')?.value||'',next=$('nextActions')?.value||'';
  if(!inc){$('reportPreview').innerHTML='<h1>Reporte HazMat</h1><p>No hay un incidente activo.</p>';return}
@@ -348,6 +348,11 @@ function buildReport(){
  <h2>Registro cronológico</h2>
  <table><tr><th>Hora</th><th>Responsable</th><th>Evento / decisión</th></tr>${tableRows(ops.log,['time','actor','event'])}</table>
  <p><b>Checklist operativo:</b> ${opsDone}/${checksOps.length||0}</p>
+ ${ppe?.result?`<h2>Evaluación preliminar de EPP</h2>
+ <table><tr><th>Nivel</th><td>${escapeHtml(ppe.result.level)}</td></tr>
+ <tr><th>Respiratoria</th><td>${escapeHtml(ppe.result.respiratory)}</td></tr>
+ <tr><th>Traje</th><td>${escapeHtml(ppe.result.suit)}</td></tr>
+ <tr><th>Advertencias</th><td>${escapeHtml((ppe.result.warnings||[]).join(' | ')||'Sin advertencias registradas')}</td></tr></table>`:''}
  <h2>Situación actual</h2><p>${escapeHtml(conclusion||'Sin conclusión registrada')}</p>
  <h2>Próximas acciones</h2><p>${escapeHtml(next||'Sin acciones registradas')}</p>
  <h2>Advertencia</h2><p>Documento de apoyo. Verificar siempre con la GRE 2024, procedimientos locales, monitoreo atmosférico y autoridad competente.</p>`;
@@ -488,3 +493,203 @@ if(document.readyState==='loading'){
 }else{
   startApplication();
 }
+
+
+// ---------------- v0.7: Selector preliminar de EPP HazMat ----------------
+const PPE_CHEMICAL_RULES={
+ "1005":{
+   name:"Amoníaco anhidro",
+   hazards:["Tóxico por inhalación","Corrosivo","Posible riesgo criogénico en liberación de líquido"],
+   defaultState:"gas",
+   skin:"moderate",
+   special:["Usar materiales compatibles con amoníaco anhidro.","Evitar materiales no compatibles según ficha del fabricante."]
+ },
+ "1017":{
+   name:"Cloro",
+   hazards:["Tóxico por inhalación","Gas oxidante","Puede producir daño respiratorio severo"],
+   defaultState:"gas",
+   skin:"high",
+   special:["Para ingreso en nube o concentración desconocida, priorizar traje contra vapores totalmente encapsulado."]
+ },
+ "1040":{
+   name:"Óxido de etileno",
+   hazards:["Tóxico","Inflamable","Reactivo / posible polimerización"],
+   defaultState:"gas",
+   skin:"high",
+   special:["Controlar fuentes de ignición.","Verificar compatibilidad del traje con óxido de etileno."]
+ },
+ "1050":{
+   name:"Cloruro de hidrógeno anhidro",
+   hazards:["Tóxico por inhalación","Altamente corrosivo","Reacciona con humedad formando ácido"],
+   defaultState:"gas",
+   skin:"high",
+   special:["Proteger completamente piel y ojos.","Considerar vapores corrosivos y condensación ácida."]
+ },
+ "2186":{
+   name:"Cloruro de hidrógeno, líquido refrigerado",
+   hazards:["Tóxico por inhalación","Corrosivo","Criogénico"],
+   defaultState:"liquid",
+   skin:"high",
+   special:["Agregar protección frente a frío extremo compatible con el traje químico."]
+ },
+ "1052":{
+   name:"Fluoruro de hidrógeno anhidro",
+   hazards:["Tóxico","Altamente corrosivo","Toxicidad sistémica grave"],
+   defaultState:"liquid",
+   skin:"veryhigh",
+   special:["Máxima protección dérmica compatible.","Preparar descontaminación y asistencia médica específica antes del ingreso."]
+ },
+ "1079":{
+   name:"Dióxido de azufre",
+   hazards:["Tóxico por inhalación","Irritante / corrosivo en presencia de humedad"],
+   defaultState:"gas",
+   skin:"moderate",
+   special:["Priorizar protección respiratoria autónoma en concentración desconocida o IDLH."]
+ }
+};
+
+function ppeKey(){return current?`hazmatPPE:${current.id}`:'hazmatPPE:draft'}
+function loadPPE(){
+  $('ppeSubstance').value=current?.name||'Sin incidente activo';
+  $('ppeUN').value=current?.un||'';
+  const saved=getSavedPPE();
+  if(saved){
+    ['ppeTask','ppeState','ppeConcentration','ppeOxygen','ppeContact','ppeFire','ppeCompatibility','ppeMonitoring'].forEach(id=>{
+      if(saved.inputs?.[id]!==undefined)$(id).value=saved.inputs[id]
+    });
+    renderPPEResult(saved.result);
+  }else if(current){
+    const rule=PPE_CHEMICAL_RULES[current.un];
+    if(rule)$('ppeState').value=rule.defaultState
+  }
+}
+function getSavedPPE(){try{return JSON.parse(localStorage.getItem(ppeKey())||'null')}catch{return null}}
+
+function evaluatePPE(){
+  const un=current?.un||$('ppeUN').value;
+  const rule=PPE_CHEMICAL_RULES[un]||{
+    name:current?.name||'Sustancia no parametrizada',
+    hazards:["Peligros específicos no parametrizados"],
+    defaultState:$('ppeState').value,
+    skin:"unknown",
+    special:["Consultar GRE, SDS y tabla de compatibilidad del fabricante."]
+  };
+  const task=$('ppeTask').value,state=$('ppeState').value,conc=$('ppeConcentration').value,
+        oxygen=$('ppeOxygen').value,contact=$('ppeContact').value,fire=$('ppeFire').value,
+        compat=$('ppeCompatibility').value,monitor=$('ppeMonitoring').value;
+
+  const unknownAtmosphere = conc==='unknown'||conc==='idlhorhigher'||oxygen==='unknown'||oxygen==='deficient';
+  const directEntry = ['recon','monitoring','rescue','control'].includes(task);
+  const vaporChallenge = ['gas','aerosol','unknown'].includes(state)||['vapor','unknown'].includes(contact);
+  const highSkin = ['high','veryhigh'].includes(rule.skin)||['immersion','unknown'].includes(contact);
+  const splashOnly = contact==='splash'&&state==='liquid'&&!vaporChallenge;
+  const supportOnly = task==='support';
+
+  let level,respiratory,suit,gloves,boots,decision;
+  const warnings=[],missing=[];
+
+  if(supportOnly && conc==='nonhazardous' && oxygen==='normal'){
+    level="EPP operativo de zona fría";
+    respiratory="Sin protección respiratoria especial, salvo exigencia del procedimiento local.";
+    suit="Ropa operativa acorde a la función y riesgo físico.";
+    decision="Mantener fuera de zonas contaminadas y bajo control de acceso.";
+  }else if(unknownAtmosphere && directEntry){
+    respiratory="ERA/SCBA de presión positiva, con autonomía y equipo de respaldo.";
+    if(vaporChallenge||highSkin){
+      level="Nivel A orientativo";
+      suit="Traje químico totalmente encapsulado, hermético a vapores, compatible con la sustancia.";
+    }else{
+      level="Nivel B orientativo";
+      suit="Traje químico contra salpicaduras, compatible y con protección dérmica adecuada.";
+    }
+    decision="No autorizar ingreso hasta preparar respaldo, descontaminación, comunicaciones y rescate.";
+  }else if(conc==='knownbelow' && oxygen==='normal' && monitor==='complete'){
+    if(vaporChallenge && highSkin){
+      level="Nivel B o A según compatibilidad y riesgo dérmico";
+      respiratory="ERA/SCBA o respirador aprobado específicamente, solo si el programa respiratorio y la evaluación lo permiten.";
+      suit="Protección química compatible con vapor o salpicadura según concentración y tarea.";
+    }else if(splashOnly){
+      level="Nivel B orientativo";
+      respiratory="ERA/SCBA si existe posibilidad de atmósfera cambiante; otro respirador solo con evaluación formal.";
+      suit="Traje contra salpicaduras compatible.";
+    }else{
+      level="Nivel C potencial, sujeto a autorización";
+      respiratory="Respirador purificador únicamente si contaminante, concentración, cartucho y vida útil están definidos.";
+      suit="Protección dérmica compatible con el contacto esperado.";
+    }
+    decision="Mantener monitoreo continuo y criterios claros de retirada.";
+  }else{
+    level="Protección máxima hasta completar evaluación";
+    respiratory="ERA/SCBA de presión positiva.";
+    suit=highSkin||vaporChallenge?"Traje totalmente encapsulado y compatible.":"Traje químico compatible con protección dérmica suficiente.";
+    decision="Tratar la atmósfera como desconocida hasta contar con datos representativos.";
+  }
+
+  gloves="Doble guante químico compatible, con capa interna y externa según fabricante.";
+  boots="Botas químicas integradas o compatibles, antideslizantes y selladas según el conjunto.";
+
+  if(compat==='unknown')missing.push("Compatibilidad de traje, guantes y botas no verificada.");
+  if(compat==='incompatible')warnings.push("DETENER: el material de protección es incompatible o dudoso.");
+  if(monitor!=='complete')missing.push("Monitoreo insuficiente o no representativo.");
+  if(oxygen==='unknown')missing.push("Concentración de oxígeno desconocida.");
+  if(conc==='unknown')missing.push("Concentración del contaminante desconocida.");
+  if(fire==='yes')warnings.push("El traje químico no debe considerarse protección térmica o contra llama. Evaluar estrategia defensiva y EPP de incendio por separado.");
+  if(fire==='unknown')missing.push("Presencia de incendio o calor no confirmada.");
+  if(un==='1005'||un==='2186')warnings.push("Evaluar exposición a frío extremo por liberación de producto refrigerado o evaporación rápida.");
+  if(un==='1040')warnings.push("Controlar ignición y riesgo de atmósfera inflamable.");
+  if(un==='1052')warnings.push("Asegurar descontaminación inmediata y soporte médico específico antes del ingreso.");
+
+  const result={
+    substance:rule.name,un,level,respiratory,suit,gloves,boots,decision,
+    hazards:rule.hazards,special:rule.special,warnings,missing,
+    generatedAt:new Date().toISOString()
+  };
+  return result
+}
+function renderPPEResult(r){
+  if(!r){$('ppeResult').innerHTML='<p class="small">Sin evaluación.</p>';return}
+  const warningHtml=r.warnings?.length?`<div class="ppe-item stop"><strong>Advertencias críticas</strong>${r.warnings.map(x=>'• '+escapeHtml(x)).join('<br>')}</div>`:'';
+  const missingHtml=r.missing?.length?`<div class="ppe-item missing"><strong>Datos faltantes</strong>${r.missing.map(x=>'• '+escapeHtml(x)).join('<br>')}</div>`:'<div class="ppe-item good"><strong>Datos mínimos</strong>Sin faltantes críticos declarados.</div>';
+  $('ppeResult').innerHTML=`
+    <div class="small">RECOMENDACIÓN PRELIMINAR</div>
+    <div class="ppe-level">${escapeHtml(r.level)}</div>
+    <div class="ppe-list">
+      <div class="ppe-item"><strong>Protección respiratoria</strong>${escapeHtml(r.respiratory)}</div>
+      <div class="ppe-item"><strong>Traje químico</strong>${escapeHtml(r.suit)}</div>
+      <div class="ppe-item"><strong>Guantes</strong>${escapeHtml(r.gloves)}</div>
+      <div class="ppe-item"><strong>Botas</strong>${escapeHtml(r.boots)}</div>
+      <div class="ppe-item"><strong>Condición para ingreso</strong>${escapeHtml(r.decision)}</div>
+      <div class="ppe-item"><strong>Peligros relevantes</strong>${(r.hazards||[]).map(x=>'• '+escapeHtml(x)).join('<br>')}</div>
+      <div class="ppe-item"><strong>Consideraciones específicas</strong>${(r.special||[]).map(x=>'• '+escapeHtml(x)).join('<br>')}</div>
+      ${warningHtml}${missingHtml}
+    </div>`
+}
+function collectPPEInputs(){
+  return Object.fromEntries(['ppeTask','ppeState','ppeConcentration','ppeOxygen','ppeContact','ppeFire','ppeCompatibility','ppeMonitoring'].map(id=>[id,$(id).value]))
+}
+$('calculatePPE').onclick=()=>{
+  const result=evaluatePPE();renderPPEResult(result);
+  window.__lastPPE={inputs:collectPPEInputs(),result}
+};
+$('savePPE').onclick=()=>{
+  const payload=window.__lastPPE||{inputs:collectPPEInputs(),result:evaluatePPE()};
+  localStorage.setItem(ppeKey(),JSON.stringify(payload));
+  renderPPEResult(payload.result);alert('Evaluación de EPP guardada')
+};
+$('exportPPE').onclick=()=>{
+  const payload=window.__lastPPE||{inputs:collectPPEInputs(),result:evaluatePPE()};
+  download(`EPP_UN${payload.result.un}_${safeName(payload.result.substance)}.json`,JSON.stringify(payload,null,2),'application/json')
+};
+$('copyPPE').onclick=async()=>{
+  const payload=window.__lastPPE||{inputs:collectPPEInputs(),result:evaluatePPE()},r=payload.result;
+  const txt=`UN ${r.un} — ${r.substance}
+Recomendación: ${r.level}
+Respiratoria: ${r.respiratory}
+Traje: ${r.suit}
+Guantes: ${r.gloves}
+Botas: ${r.boots}
+Condición: ${r.decision}
+Advertencias: ${(r.warnings||[]).join(' | ')||'Ninguna registrada'}
+Datos faltantes: ${(r.missing||[]).join(' | ')||'Ninguno registrado'}`;
+  try{await navigator.clipboard.writeText(txt);alert('Resumen copiado')}catch{alert(txt)}
+};

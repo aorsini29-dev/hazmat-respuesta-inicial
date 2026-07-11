@@ -1,21 +1,38 @@
-# HazMat Respuesta Inicial v0.6.2 — Hotfix
+# HazMat Respuesta Inicial v0.7 — Selector de EPP
 
-## Error corregido
-La versión v0.6.1 contenía un error de sintaxis en `app.js` que detenía toda la aplicación antes de cargar el catálogo GRE.
+## Nuevo módulo
+Selector preliminar de equipo de protección personal según:
+- Sustancia y número ONU.
+- Tarea.
+- Estado físico.
+- Concentración.
+- Oxígeno.
+- Tipo de contacto.
+- Incendio o calor.
+- Compatibilidad química.
+- Calidad del monitoreo.
 
-## Verificación
-- El catálogo de sustancias vuelve a cargarse.
-- La búsqueda por ONU y nombre queda operativa.
-- El menú lateral y la sección Táctico se conservan.
-- Se agregó una rutina de inicio con aviso explícito si falta `gre-data.js`.
+## Sustancias parametrizadas
+- UN1005 Amoníaco anhidro.
+- UN1017 Cloro.
+- UN1040 Óxido de etileno.
+- UN1050 Cloruro de hidrógeno anhidro.
+- UN2186 Cloruro de hidrógeno líquido refrigerado.
+- UN1052 Fluoruro de hidrógeno anhidro.
+- UN1079 Dióxido de azufre.
+
+## Funciones
+- Recomendación orientativa de Nivel A, B, C o EPP de zona fría.
+- Protección respiratoria.
+- Traje químico.
+- Guantes y botas.
+- Advertencias críticas.
+- Datos faltantes.
+- Guardado local.
+- Exportación JSON.
+- Copia de resumen.
+- Incorporación al reporte consolidado.
 
 ## Actualización
-Reemplace todos los archivos del repositorio, no solamente `app.js`.
-Luego haga commit y espere la publicación de GitHub Pages.
-
-En Android:
-1. Abra la URL en Chrome.
-2. Recargue la página.
-3. Cierre completamente la PWA.
-4. Vuelva a abrirla.
-5. Si conserva la versión anterior, desinstale e instale nuevamente.
+Reemplace todos los archivos del repositorio y haga commit.
+Luego cierre y vuelva a abrir la PWA. Si conserva la versión anterior, reinstale la aplicación.
