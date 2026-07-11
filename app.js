@@ -1,9 +1,26 @@
 
 const CATALOG=window.GRE_CATALOG||[], T1=window.GRE_TABLE1||{}, T3=window.GRE_TABLE3||{};
 const $=id=>document.getElementById(id), winds={light:0,moderate:1,strong:2};
-let current=null,map,marker,isoLayer,protectLayer,windLine,measureMode=false,measurePts=[],measureLayer;
-function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current)renderMap()},80);if(id==='history')renderHistory();if(id==='ics')loadICSView();if(id==='operations')loadOperations();if(id==='reports')buildReport();if(id==='tactical')loadTactical();if(id==='tools'){} }
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showView(t.dataset.view));
+let current=null;
+const menuBtn=document.getElementById('menuBtn'),drawer=document.getElementById('drawer'),drawerBackdrop=document.getElementById('drawerBackdrop');
+function openDrawer(){drawer?.classList.add('open');drawerBackdrop?.classList.add('open')}
+function closeDrawer(){drawer?.classList.remove('open');drawerBackdrop?.classList.remove('open')}
+menuBtn?.addEventListener('click',openDrawer);
+document.getElementById('closeDrawer')?.addEventListener('click',closeDrawer);
+drawerBackdrop?.addEventListener('click',closeDrawer);
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>showView(t.dataset.view)));
+,map,marker,isoLayer,protectLayer,windLine,measureMode=false,measurePts=[],measureLayer;
+function showView(id){
+ document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));
+ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));
+ closeDrawer();
+ if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current){renderMap();renderTacticalMarkers();applyTacticalZones(false)}},100);
+ if(id==='history')renderHistory();
+ if(id==='ics')loadICSView();
+ if(id==='operations')loadOperations();
+ if(id==='reports')buildReport();
+ if(id==='tactical')loadTactical();
+}
 
 const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 function searchableRows(q){
@@ -62,7 +79,7 @@ function calculate(){
  $('scenario').textContent=`Guía ${r.guide} · ${size==='small'?'derrame pequeño':'derrame grande'}${containerLabel?' · '+containerLabel:''} · ${p==='day'?'Día':'Noche'} · viento ${w==='light'?'leve':w==='moderate'?'moderado':'fuerte'}`;
  $('iso').textContent=`${iso} m`;$('protect').textContent=`${prot} km`;
  $('warn').innerHTML=(String(prot).includes('+')?'<b>Distancia con “+”:</b> puede ser mayor en ciertas condiciones atmosféricas.<br>':'')+`<b>${source}.</b> Aproxímese desde barlovento, terreno elevado y corriente arriba. Confirme producto, recipiente, liberación y viento real.`;
- $('resultCard').classList.remove('hidden');if(map)renderMap()
+ $('resultCard').classList.remove('hidden');if(map)renderMap();updateGlobalStatus()
 }
 $('goMap').onclick=()=>showView('mapview');
 $('save').onclick=()=>{if(!current)return;let arr=getHistory();let i=arr.findIndex(x=>x.id===current.id);if(i>=0)arr[i]=current;else arr.unshift(current);localStorage.setItem('hazmatHistory',JSON.stringify(arr.slice(0,100)));alert('Incidente guardado');renderHistory()};
@@ -78,7 +95,7 @@ function addMeasurePoint(p){measurePts.push(p);if(measurePts.length===2){let d=m
 
 function getHistory(){try{return JSON.parse(localStorage.getItem('hazmatHistory')||'[]')}catch{return[]}}
 function renderHistory(){const arr=getHistory(),box=$('historyList');if(!arr.length){box.innerHTML='<p class="small">No hay incidentes guardados.</p>';return}box.innerHTML=arr.map(x=>`<div class="history-item"><div class="history-title">${escapeHtml(x.title)}</div><div class="history-meta">UN${x.un} · ${escapeHtml(x.name)} · ${new Date(x.createdAt).toLocaleString()}<br>${x.source||''}<br>${x.lat.toFixed(5)}, ${x.lon.toFixed(5)}</div><div class="mini-actions"><button class="secondary" onclick="openIncident('${x.id}')">Abrir</button><button class="secondary" onclick="exportSaved('${x.id}','kml')">KML</button><button class="danger" onclick="deleteIncident('${x.id}')">Eliminar</button></div></div>`).join('')}
-window.openIncident=id=>{let x=getHistory().find(v=>v.id===id);if(!x)return;current=x;loadForm(x);$('resultCard').classList.remove('hidden');$('chemical').textContent=`UN${x.un} — ${x.name}`;$('scenario').textContent=`${x.source||''}`;$('iso').textContent=x.isolation_m+' m';$('protect').textContent=x.protective_km+' km';showView('mapview');setTimeout(renderMap,100)};
+window.openIncident=id=>{let x=getHistory().find(v=>v.id===id);if(!x)return;current=x;loadForm(x);$('resultCard').classList.remove('hidden');$('chemical').textContent=`UN${x.un} — ${x.name}`;$('scenario').textContent=`${x.source||''}`;$('iso').textContent=x.isolation_m+' m';$('protect').textContent=x.protective_km+' km';showView('mapview');setTimeout(()=>{renderMap();updateGlobalStatus()},100)};
 function loadForm(x){$('searchChemical').value=x.un;fillUN(x.un);$('un').value=x.un;$('spillSize').value=x.spillSize||'large';updateScenarioControls();if(x.container)$('container').value=x.container;$('period').value=x.period;$('wind').value=x.wind;$('bearing').value=x.bearing;$('lat').value=x.lat;$('lon').value=x.lon;$('title').value=x.title;$('notes').value=x.notes||''}
 window.deleteIncident=id=>{localStorage.setItem('hazmatHistory',JSON.stringify(getHistory().filter(x=>x.id!==id)));renderHistory()};
 $('clearHistory').onclick=()=>{if(confirm('¿Eliminar todo el historial local?')){localStorage.removeItem('hazmatHistory');renderHistory()}};
@@ -406,7 +423,7 @@ function collectTactical(){
 }
 $('saveTactical').onclick=()=>{localStorage.setItem(tacticalKey(),JSON.stringify(collectTactical()));alert('Configuración táctica guardada')};
 $('applyWeather').onclick=()=>{
- if(current){current.bearing=((+$('wxWindDir').value%360)+360)%360;$('bearing').value=current.bearing;if(map)renderMap()}
+ if(current){current.bearing=((+$('wxWindDir').value%360)+360)%360;$('bearing').value=current.bearing;if(map)renderMap();updateGlobalStatus()}
  localStorage.setItem(tacticalKey(),JSON.stringify(collectTactical()));alert('Meteorología aplicada al incidente')
 };
 $('exportWeather').onclick=()=>download(`Meteorologia_${safeName(current?.title||'Incidente')}.json`,JSON.stringify(collectTactical().weather,null,2),'application/json');
@@ -443,3 +460,14 @@ $('exportCombinedKML').onclick=()=>{
  let base=toKML(current).replace('</Document></kml>',tacticalKMLPlacemarks()+'</Document></kml>');
  download(`UN${current.un}_${safeName(current.title)}_TACTICO.kml`,base,'application/vnd.google-earth.kml+xml')
 };
+
+
+function updateGlobalStatus(){
+ const el=document.getElementById('statusBar');if(!el)return;
+ if(!current){el.textContent='Sin incidente activo';return}
+ const wx=getTactical()?.weather;
+ const windTxt=wx?`${Math.round(wx.windDir||current.bearing)}° · ${wx.windSpeed??'-'} km/h`:`${Math.round(current.bearing)}°`;
+ el.textContent=`UN ${current.un} | ${current.name} | Viento ${windTxt} | Aislamiento ${current.isolation_m} m | Acción protectora ${current.protective_km} km`;
+}
+
+document.addEventListener('DOMContentLoaded',()=>{updateGlobalStatus();showView('incident')});
