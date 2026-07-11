@@ -1,18 +1,21 @@
-# HazMat Respuesta Inicial v0.3 — Sprint 2
+# HazMat Respuesta Inicial v0.4 — Sprint 3
 
-## Incorporado
-- Buscador por número ONU o nombre.
-- 2511 denominaciones del índice amarillo de la GRE 2024.
-- Número de guía asociado a cada denominación.
-- Selección de derrame pequeño o grande.
-- 115 filas de Tabla 1 estructuradas para cálculo.
-- Tabla 3 completa para los seis gases PTI comunes ya validados.
-- La aplicación bloquea el cálculo cuando una sustancia está identificada pero su fila de Tabla 1 aún no fue estructurada.
-- Fuente del resultado guardada en historial, KML y GeoJSON.
+## Nuevo módulo: Sistema de Comando de Incidentes
+- Comando único o unificado.
+- Estructura inicial o expandida HazMat.
+- Asignación de Comandante del Incidente, Seguridad, Enlace, Información Pública y Grupo HazMat.
+- Funciones HazMat: entrada, respaldo, descontaminación, control de acceso, especialista técnico y EMS.
+- Objetivos del período operacional.
+- Checklist de 15 controles críticos.
+- Barra de avance del plan.
+- Registro de recursos y estado.
+- Guardado local por incidente.
+- Exportación del plan en JSON.
+- Resumen operativo automático.
 
 ## Actualización
-Reemplace todos los archivos del repositorio por los de esta carpeta y haga commit.
-La app puede conservar caché anterior: cierre y abra nuevamente; si fuera necesario, desinstale e instale la PWA.
+Reemplace todos los archivos del repositorio por los de esta carpeta, incluyendo `gre-data.js`, y haga commit.
+Debido al cambio del service worker, puede ser necesario cerrar y volver a abrir la PWA o reinstalarla.
 
-## Importante
-El catálogo de identificación es más amplio que el motor de cálculo. La presencia de una sustancia en el buscador no implica que esta versión pueda calcular sus distancias.
+## Alcance
+Es una ayuda organizativa. La autoridad competente debe definir procedimientos, calificaciones, terminología y formularios oficiales.

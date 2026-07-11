@@ -28,15 +28,26 @@ button{border:0;border-radius:11px;padding:12px 13px;font-weight:800;font-size:.
 #measureStatus{font-size:.78rem;color:var(--muted);margin-top:7px}.hidden{display:none!important}
 footer{font-size:.7rem;color:var(--muted);padding:8px 4px 24px;line-height:1.4}
 @media(max-width:650px){.grid{grid-template-columns:1fr}.actions3{grid-template-columns:1fr}.metric{grid-template-columns:1fr}}
+
+.org-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.role-card{border:1px solid #d8e0e7;border-radius:13px;padding:11px;background:#fbfcfd}
+.role-card h3{font-size:.88rem;margin:0 0 8px}.role-card.command{border-left:5px solid #8e24aa}.role-card.hazmat{border-left:5px solid #ef6c00}.role-card.support{border-left:5px solid #1565c0}.role-card.safety{border-left:5px solid #c62828}
+.checklist{display:grid;gap:7px}.checkrow{display:flex;gap:9px;align-items:flex-start;padding:9px;border:1px solid #e0e5ea;border-radius:10px;background:#fff}.checkrow input{width:auto;margin-top:3px}.checkrow span{font-size:.82rem;line-height:1.35}
+.obj-row,.resource-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px}.obj-row button,.resource-row button{padding:8px 10px}
+.statusbar{height:10px;background:#e2e8ee;border-radius:999px;overflow:hidden}.statusbar>div{height:100%;background:#2e7d32;width:0}
+.summarybox{background:#f7f9fb;border:1px solid #dce3ea;border-radius:12px;padding:11px;font-size:.8rem;line-height:1.45;white-space:pre-wrap}
+@media(max-width:650px){.org-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
 <header>
 <h1>HazMat Respuesta Inicial</h1>
-<div class="sub">Sprint 2 · v0.3 · catálogo GRE, Tabla 1 y Tabla 3</div>
+<div class="sub">Sprint 3 · v0.4 · Sistema de Comando de Incidentes</div>
 <nav>
 <button class="tab active" data-view="incident">Incidente</button>
 <button class="tab" data-view="mapview">Mapa</button>
+<button class="tab" data-view="ics">Comando</button>
 <button class="tab" data-view="history">Historial</button>
 </nav>
 </header>
@@ -103,6 +114,68 @@ footer{font-size:.7rem;color:var(--muted);padding:8px 4px 24px;line-height:1.4}
 </div>
 </section>
 
+
+<section id="ics" class="view">
+<div class="card">
+<h2>Plan inicial del incidente</h2>
+<div class="warning">La estructura debe crecer según la magnitud y complejidad del incidente. El Comandante del Incidente conserva la responsabilidad global; el personal asignado debe ser competente para la función.</div>
+<div class="grid" style="margin-top:10px">
+<div><label>Nivel organizativo</label><select id="icsLevel"><option value="initial">Inicial</option><option value="expanded">Expandido HazMat</option></select></div>
+<div><label>Modo de comando</label><select id="commandMode"><option value="single">Comando único</option><option value="unified">Comando unificado</option></select></div>
+<div><label>Nombre del incidente</label><input id="icsIncidentName" placeholder="Se completa desde el incidente actual"></div>
+<div><label>Período operacional</label><input id="operationalPeriod" value="Inicial"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>Estructura y asignaciones</h2>
+<div class="org-grid">
+<div class="role-card command"><h3>Comandante del Incidente</h3><input id="roleIC" placeholder="Nombre / indicativo"></div>
+<div class="role-card safety"><h3>Oficial de Seguridad</h3><input id="roleSafety" placeholder="Nombre / indicativo"></div>
+<div class="role-card support"><h3>Enlace</h3><input id="roleLiaison" placeholder="Nombre / indicativo"></div>
+<div class="role-card support"><h3>Información Pública</h3><input id="rolePIO" placeholder="Nombre / indicativo"></div>
+<div class="role-card hazmat"><h3>Supervisor Grupo HazMat</h3><input id="roleHazmat" placeholder="Nombre / indicativo"></div>
+<div class="role-card safety"><h3>Asistente Seguridad HazMat</h3><input id="roleHazSafety" placeholder="Nombre / indicativo"></div>
+<div class="role-card hazmat"><h3>Equipo de Entrada</h3><input id="roleEntry" placeholder="Integrantes / indicativo"></div>
+<div class="role-card hazmat"><h3>Equipo de Respaldo</h3><input id="roleBackup" placeholder="Integrantes / indicativo"></div>
+<div class="role-card hazmat"><h3>Descontaminación</h3><input id="roleDecon" placeholder="Líder / equipo"></div>
+<div class="role-card support"><h3>Control de Acceso</h3><input id="roleAccess" placeholder="Líder / equipo"></div>
+<div class="role-card support"><h3>Especialista Técnico</h3><input id="roleTechnical" placeholder="Químico / HSE / proveedor"></div>
+<div class="role-card support"><h3>Grupo Médico / EMS</h3><input id="roleMedical" placeholder="Responsable / ambulancia"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>Objetivos del período</h2>
+<div id="objectives"></div>
+<button class="secondary wide" id="addObjective">Agregar objetivo</button>
+</div>
+
+<div class="card">
+<h2>Checklist de seguridad y control</h2>
+<div class="checklist" id="icsChecklist"></div>
+<div style="margin-top:10px">
+<div class="small" id="progressText">0 de 0 completados</div>
+<div class="statusbar"><div id="progressBar"></div></div>
+</div>
+</div>
+
+<div class="card">
+<h2>Recursos asignados</h2>
+<div id="resources"></div>
+<button class="secondary wide" id="addResource">Agregar recurso</button>
+</div>
+
+<div class="card">
+<h2>Resumen operativo</h2>
+<div class="actions">
+<button class="primary" id="saveICS">Guardar plan</button>
+<button class="secondary" id="exportICS">Exportar plan JSON</button>
+</div>
+<div class="summarybox" id="icsSummary" style="margin-top:10px">No hay un plan guardado.</div>
+</div>
+</section>
+
 <section id="history" class="view">
 <div class="card">
 <h2>Incidentes guardados</h2>
@@ -110,7 +183,7 @@ footer{font-size:.7rem;color:var(--muted);padding:8px 4px 24px;line-height:1.4}
 <button class="danger wide" id="clearHistory">Eliminar todo el historial</button>
 </div>
 </section>
-<footer>Versión alfa para capacitación y evaluación. Catálogo de búsqueda: 2511 denominaciones extraídas del índice amarillo. Tabla 1 con 115 filas estructuradas y Tabla 3 para seis gases PTI. No sustituye la GRE 2024, el Comando del Incidente, el monitoreo atmosférico ni ALOHA.</footer>
+<footer>Versión alfa para capacitación y evaluación. El módulo SCI es una ayuda organizativa y no reemplaza los procedimientos de la autoridad competente. Catálogo de búsqueda: 2511 denominaciones extraídas del índice amarillo. Tabla 1 con 115 filas estructuradas y Tabla 3 para seis gases PTI. No sustituye la GRE 2024, el Comando del Incidente, el monitoreo atmosférico ni ALOHA.</footer>
 </main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="gre-data.js"></script>

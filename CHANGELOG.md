@@ -1,10 +1,12 @@
 # CHANGELOG
 
-## v0.3 — Sprint 2
-- Catálogo GRE ampliado: 2511 denominaciones.
-- Búsqueda por ONU y nombre.
-- Guías asociadas.
-- Motor Tabla 1 parcial estructurado: 115 filas.
-- Tabla 3 conservada y validada.
-- Derrame pequeño/grande.
-- Trazabilidad de fuente.
+## v0.4 — Sprint 3
+- Módulo SCI/ICS.
+- Comando único y unificado.
+- Organización inicial y expandida HazMat.
+- Asignación de 12 funciones.
+- Objetivos editables.
+- Checklist de seguridad y control.
+- Recursos y estados.
+- Persistencia local por incidente.
+- Exportación JSON del plan.

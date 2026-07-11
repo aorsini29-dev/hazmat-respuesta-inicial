@@ -2,7 +2,7 @@
 const CATALOG=window.GRE_CATALOG||[], T1=window.GRE_TABLE1||{}, T3=window.GRE_TABLE3||{};
 const $=id=>document.getElementById(id), winds={light:0,moderate:1,strong:2};
 let current=null,map,marker,isoLayer,protectLayer,windLine,measureMode=false,measurePts=[],measureLayer;
-function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current)renderMap()},80);if(id==='history')renderHistory()}
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current)renderMap()},80);if(id==='history')renderHistory();if(id==='ics')loadICSView()}
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showView(t.dataset.view));
 
 const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -95,3 +95,118 @@ $('json').onclick=()=>current&&download(`UN${current.un}_${safeName(current.titl
 window.exportSaved=(id,type)=>{let c=getHistory().find(x=>x.id===id);if(c&&type==='kml')download(`UN${c.un}_${safeName(c.title)}.kml`,toKML(c),'application/vnd.google-earth.kml+xml')};
 function safeName(s){return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'_').replace(/^_|_$/g,'')}
 fillUN('1005');renderHistory();
+
+
+// ---------------- Sprint 3: Sistema de Comando de Incidentes ----------------
+const ICS_CHECKS=[
+'Comando establecido, identificado y comunicado.',
+'Evaluación inicial y objetivos tácticos definidos.',
+'Zona caliente, tibia y fría delimitadas.',
+'Dirección del viento y ruta de aproximación confirmadas.',
+'Oficial de Seguridad o asistente HazMat asignado.',
+'Control de acceso y registro de personal implementados.',
+'Equipo de entrada identificado y con competencia/EPP adecuados.',
+'Equipo de respaldo disponible y listo.',
+'Corredor de descontaminación operativo antes del ingreso.',
+'Plan de comunicaciones y canal táctico confirmados.',
+'Monitoreo atmosférico previsto y equipos verificados.',
+'Plan médico, rehabilitación y transporte definidos.',
+'Recurso técnico/químico o contacto de emergencia consultado.',
+'Plan de emergencia para pérdida de comunicaciones o rescate del personal.',
+'Transferencia de comando y registro de decisiones previstos.'
+];
+const DEFAULT_OBJECTIVES=[
+'Proteger la vida y evitar nuevas exposiciones.',
+'Aislar el área y controlar el acceso.',
+'Identificar el producto, recipiente y condiciones de liberación.',
+'Establecer monitoreo, descontaminación y capacidad de rescate.',
+'Estabilizar el incidente mediante acciones compatibles con el nivel de competencia.'
+];
+const ROLE_IDS=['roleIC','roleSafety','roleLiaison','rolePIO','roleHazmat','roleHazSafety','roleEntry','roleBackup','roleDecon','roleAccess','roleTechnical','roleMedical'];
+
+function loadICSView(){
+ if(current && !$('icsIncidentName').value)$('icsIncidentName').value=current.title||`UN${current.un}`;
+ const saved=getICSPlan();
+ if(saved)populateICS(saved);
+ if(!$('objectives').children.length)DEFAULT_OBJECTIVES.forEach(x=>addObjectiveRow(x));
+ if(!$('resources').children.length)addResourceRow('Unidad HazMat','Disponible');
+ if(!$('icsChecklist').children.length)renderICSChecklist(saved?.checks||[]);
+ updateICSProgress();updateICSSummary();
+}
+function getICSKey(){return current?`hazmatICS:${current.id}`:'hazmatICS:draft'}
+function getICSPlan(){try{return JSON.parse(localStorage.getItem(getICSKey())||'null')}catch{return null}}
+function renderICSChecklist(checked=[]){
+ $('icsChecklist').innerHTML=ICS_CHECKS.map((x,i)=>`<label class="checkrow"><input type="checkbox" data-ics-check="${i}" ${checked[i]?'checked':''}><span>${escapeHtml(x)}</span></label>`).join('');
+ document.querySelectorAll('[data-ics-check]').forEach(c=>c.onchange=()=>{updateICSProgress();updateICSSummary()})
+}
+function updateICSProgress(){
+ const boxes=[...document.querySelectorAll('[data-ics-check]')],done=boxes.filter(x=>x.checked).length;
+ $('progressText').textContent=`${done} de ${boxes.length} completados`;
+ $('progressBar').style.width=boxes.length?`${done/boxes.length*100}%`:'0%';
+}
+function addObjectiveRow(value=''){
+ const d=document.createElement('div');d.className='obj-row';
+ d.innerHTML=`<input value="${escapeHtml(value)}" placeholder="Objetivo"><button class="danger" type="button">Quitar</button>`;
+ d.querySelector('button').onclick=()=>{d.remove();updateICSSummary()};
+ d.querySelector('input').oninput=updateICSSummary;$('objectives').appendChild(d)
+}
+function addResourceRow(name='',status='Asignado'){
+ const d=document.createElement('div');d.className='resource-row';
+ d.innerHTML=`<div class="grid"><input class="res-name" value="${escapeHtml(name)}" placeholder="Recurso / unidad"><select class="res-status"><option>Disponible</option><option>Asignado</option><option>En tránsito</option><option>Fuera de servicio</option></select></div><button class="danger" type="button">Quitar</button>`;
+ d.querySelector('.res-status').value=status;
+ d.querySelector('button').onclick=()=>{d.remove();updateICSSummary()};
+ d.querySelectorAll('input,select').forEach(x=>x.oninput=updateICSSummary);$('resources').appendChild(d)
+}
+$('addObjective').onclick=()=>addObjectiveRow('');
+$('addResource').onclick=()=>addResourceRow('','Asignado');
+[...ROLE_IDS,'icsLevel','commandMode','icsIncidentName','operationalPeriod'].forEach(id=>$(id).addEventListener('input',updateICSSummary));
+
+function collectICS(){
+ return {
+  version:'0.4',incidentId:current?.id||null,incidentName:$('icsIncidentName').value||current?.title||'Incidente HazMat',
+  operationalPeriod:$('operationalPeriod').value||'Inicial',level:$('icsLevel').value,commandMode:$('commandMode').value,
+  roles:Object.fromEntries(ROLE_IDS.map(id=>[id,$(id).value.trim()])),
+  objectives:[...$('objectives').querySelectorAll('input')].map(x=>x.value.trim()).filter(Boolean),
+  checks:[...document.querySelectorAll('[data-ics-check]')].map(x=>x.checked),
+  resources:[...$('resources').querySelectorAll('.resource-row')].map(r=>({name:r.querySelector('.res-name').value.trim(),status:r.querySelector('.res-status').value})).filter(x=>x.name),
+  updatedAt:new Date().toISOString(),
+  incident:current?{un:current.un,name:current.name,lat:current.lat,lon:current.lon,isolation_m:current.isolation_m,protective_km:current.protective_km,source:current.source}:null
+ }
+}
+function populateICS(p){
+ $('icsIncidentName').value=p.incidentName||'';$('operationalPeriod').value=p.operationalPeriod||'Inicial';
+ $('icsLevel').value=p.level||'initial';$('commandMode').value=p.commandMode||'single';
+ ROLE_IDS.forEach(id=>$(id).value=p.roles?.[id]||'');
+ $('objectives').innerHTML='';(p.objectives?.length?p.objectives:DEFAULT_OBJECTIVES).forEach(addObjectiveRow);
+ $('resources').innerHTML='';(p.resources?.length?p.resources:[{name:'Unidad HazMat',status:'Disponible'}]).forEach(x=>addResourceRow(x.name,x.status));
+ renderICSChecklist(p.checks||[])
+}
+function roleLabel(id){return {roleIC:'Comandante del Incidente',roleSafety:'Oficial de Seguridad',roleLiaison:'Enlace',rolePIO:'Información Pública',roleHazmat:'Supervisor Grupo HazMat',roleHazSafety:'Asistente Seguridad HazMat',roleEntry:'Equipo de Entrada',roleBackup:'Equipo de Respaldo',roleDecon:'Descontaminación',roleAccess:'Control de Acceso',roleTechnical:'Especialista Técnico',roleMedical:'Grupo Médico / EMS'}[id]||id}
+function updateICSSummary(){
+ if(!$('icsSummary'))return;
+ const p=collectICS(),done=p.checks.filter(Boolean).length;
+ const roles=Object.entries(p.roles).filter(([,v])=>v).map(([k,v])=>`• ${roleLabel(k)}: ${v}`).join('\n')||'• Sin asignaciones registradas';
+ const objectives=p.objectives.map((x,i)=>`${i+1}. ${x}`).join('\n')||'Sin objetivos';
+ const resources=p.resources.map(x=>`• ${x.name}: ${x.status}`).join('\n')||'Sin recursos';
+ $('icsSummary').textContent=`INCIDENTE: ${p.incidentName}
+PERÍODO: ${p.operationalPeriod}
+COMANDO: ${p.commandMode==='unified'?'Unificado':'Único'}
+ESTRUCTURA: ${p.level==='expanded'?'Expandida HazMat':'Inicial'}
+
+ASIGNACIONES
+${roles}
+
+OBJETIVOS
+${objectives}
+
+RECURSOS
+${resources}
+
+CONTROL DE SEGURIDAD: ${done}/${p.checks.length}`;
+}
+$('saveICS').onclick=()=>{
+ const p=collectICS();localStorage.setItem(getICSKey(),JSON.stringify(p));updateICSSummary();alert('Plan del incidente guardado localmente')
+};
+$('exportICS').onclick=()=>{
+ const p=collectICS();download(`SCI_${safeName(p.incidentName)}.json`,JSON.stringify(p,null,2),'application/json')
+};

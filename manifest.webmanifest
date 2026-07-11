@@ -1,11 +1,11 @@
 {
-  "name": "HazMat Respuesta Inicial v0.3",
+  "name": "HazMat Respuesta Inicial v0.4",
   "short_name": "HazMat RI",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eef2f6",
   "theme_color": "#9f1d16",
-  "description": "Catálogo GRE 2024, Tabla 1 y Tabla 3 con mapa operativo.",
+  "description": "GRE 2024, mapa operativo y Sistema de Comando de Incidentes HazMat.",
   "icons": [
     {
       "src": "icon-192.svg",
