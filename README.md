@@ -1,44 +1,30 @@
-# HazMat Respuesta Inicial v0.6 — Sprint 5
+# HazMat Respuesta Inicial v0.6.1 — RC1
 
-## Motor táctico
-- Zonas caliente, tibia y fría.
-- Radios configurables para zona tibia y fría.
-- Marcadores tácticos arrastrables:
-  - Puesto de Comando.
-  - Descontaminación.
-  - Área de espera.
-  - Área médica.
-  - Control de acceso.
-  - Policía/corte.
-  - Unidad HazMat.
-  - Autobomba.
-  - Ambulancia.
-  - Drone.
-  - Prensa.
-  - Receptor sensible.
-- Estado y nombre de cada marcador.
-- Guardado local por incidente.
+## Correcciones
+- Se corrigió la navegación que ocultaba la pestaña Táctico.
+- Se reemplazó la barra superior de pestañas por un menú lateral.
+- Se revisó la apertura de todos los módulos.
+- Se incorporó una barra global de estado del incidente.
+- Se actualizó el service worker para reducir problemas de caché.
+- La aplicación fuerza la activación de la versión nueva al actualizar.
 
-## Meteorología
-- Temperatura.
-- Humedad.
-- Velocidad y dirección del viento.
-- Nubosidad.
-- Estabilidad.
-- Aplicación de la dirección al mapa.
-- Exportación JSON.
+## Menú
+- Incidente
+- Mapa
+- Comando
+- Operaciones
+- Táctico
+- Herramientas
+- Reportes
+- Historial
 
-## Calculadoras
-- Metros, kilómetros, pies y millas.
-- Litros y galones.
-- Celsius y Fahrenheit.
-- ppm y mg/m³ a 25 °C y 1 atm.
+## Actualización en GitHub Pages
+1. Reemplace todos los archivos del repositorio.
+2. Haga commit.
+3. Abra la página publicada en Chrome.
+4. Recargue una vez.
+5. Si la PWA instalada conserva la versión anterior, cierre por completo y vuelva a abrir.
+6. Como último recurso, desinstale y reinstale la PWA.
 
-## Exportaciones
-- GeoJSON táctico.
-- CSV de marcadores.
-- KML combinado con incidente y recursos tácticos.
-
-## Actualización
-Reemplace todos los archivos del repositorio y haga commit.
-Cierre y vuelva a abrir la PWA. Si la caché persiste, reinstale la aplicación.
+## Verificación rápida
+Abra el menú ☰. La opción **Táctico** debe aparecer entre Operaciones y Herramientas.

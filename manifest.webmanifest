@@ -1,11 +1,11 @@
 {
-  "name": "HazMat Respuesta Inicial v0.6",
+  "name": "HazMat Respuesta Inicial v0.6.1",
   "short_name": "HazMat RI",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eef2f6",
   "theme_color": "#9f1d16",
-  "description": "Motor táctico HazMat, meteorología manual, marcadores y calculadoras.",
+  "description": "Release estable con navegación lateral, motor táctico, GRE 2024 y SCI.",
   "icons": [
     {
       "src": "icon-192.svg",

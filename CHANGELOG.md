@@ -1,9 +1,9 @@
 # CHANGELOG
 
-## v0.6 — Sprint 5
-- Motor táctico.
-- Zonas operativas configurables.
-- Marcadores tácticos arrastrables.
-- Meteorología manual.
-- Calculadoras de campo.
-- Exportaciones tácticas GeoJSON, CSV y KML.
+## v0.6.1 RC1
+- Corrección de navegación.
+- Recuperación de la vista Táctico.
+- Menú lateral responsive.
+- Barra global de estado.
+- Service worker con activación inmediata.
+- Limpieza automática de cachés antiguas.
