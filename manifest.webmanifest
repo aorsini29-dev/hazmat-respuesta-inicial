@@ -1,11 +1,11 @@
 {
-  "name": "HazMat Respuesta Inicial v0.6.1",
+  "name": "HazMat Respuesta Inicial v0.6.2",
   "short_name": "HazMat RI",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eef2f6",
   "theme_color": "#9f1d16",
-  "description": "Release estable con navegación lateral, motor táctico, GRE 2024 y SCI.",
+  "description": "Hotfix de carga del catálogo y navegación lateral.",
   "icons": [
     {
       "src": "icon-192.svg",

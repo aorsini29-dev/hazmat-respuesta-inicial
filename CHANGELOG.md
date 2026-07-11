@@ -1,9 +1,7 @@
 # CHANGELOG
 
-## v0.6.1 RC1
-- Corrección de navegación.
-- Recuperación de la vista Táctico.
-- Menú lateral responsive.
-- Barra global de estado.
-- Service worker con activación inmediata.
-- Limpieza automática de cachés antiguas.
+## v0.6.2
+- Corrección de error de sintaxis que impedía cargar el catálogo.
+- Inicialización resiliente de la aplicación.
+- Mensaje de error cuando falta `gre-data.js`.
+- Nueva versión de caché del service worker.

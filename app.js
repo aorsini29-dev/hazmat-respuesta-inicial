@@ -1,7 +1,7 @@
 
 const CATALOG=window.GRE_CATALOG||[], T1=window.GRE_TABLE1||{}, T3=window.GRE_TABLE3||{};
 const $=id=>document.getElementById(id), winds={light:0,moderate:1,strong:2};
-let current=null;
+let current=null,map,marker,isoLayer,protectLayer,windLine,measureMode=false,measurePts=[],measureLayer;
 const menuBtn=document.getElementById('menuBtn'),drawer=document.getElementById('drawer'),drawerBackdrop=document.getElementById('drawerBackdrop');
 function openDrawer(){drawer?.classList.add('open');drawerBackdrop?.classList.add('open')}
 function closeDrawer(){drawer?.classList.remove('open');drawerBackdrop?.classList.remove('open')}
@@ -9,7 +9,6 @@ menuBtn?.addEventListener('click',openDrawer);
 document.getElementById('closeDrawer')?.addEventListener('click',closeDrawer);
 drawerBackdrop?.addEventListener('click',closeDrawer);
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>showView(t.dataset.view)));
-,map,marker,isoLayer,protectLayer,windLine,measureMode=false,measurePts=[],measureLayer;
 function showView(id){
  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));
  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));
@@ -470,4 +469,22 @@ function updateGlobalStatus(){
  el.textContent=`UN ${current.un} | ${current.name} | Viento ${windTxt} | Aislamiento ${current.isolation_m} m | Acción protectora ${current.protective_km} km`;
 }
 
-document.addEventListener('DOMContentLoaded',()=>{updateGlobalStatus();showView('incident')});
+
+function startApplication(){
+  try{
+    fillUN('1005');
+    renderHistory();
+    updateGlobalStatus();
+    showView('incident');
+  }catch(error){
+    console.error('Error de inicio:', error);
+    const select=document.getElementById('un');
+    if(select)select.innerHTML='<option value="">Error al cargar catálogo</option>';
+    alert('La aplicación no pudo iniciar correctamente. Revise que gre-data.js haya sido publicado junto con los demás archivos.');
+  }
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',startApplication,{once:true});
+}else{
+  startApplication();
+}
