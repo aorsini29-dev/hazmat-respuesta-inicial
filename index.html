@@ -58,17 +58,32 @@ footer{font-size:.7rem;color:var(--muted);padding:8px 4px 24px;line-height:1.4}
  #reports{display:block!important}.report-preview{border:0;padding:0}.card{box-shadow:none;border:0}
 }
 
+
+.tactical-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.marker-list{display:grid;gap:8px}
+.marker-row{display:grid;grid-template-columns:1.2fr .9fr .8fr auto;gap:7px;align-items:center}
+.marker-row input,.marker-row select{padding:9px;font-size:.85rem}
+.weather-card{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tool-card{border:1px solid #d8e0e7;border-radius:13px;padding:12px;background:#fbfcfd}
+.tool-card h3{font-size:.9rem;margin:0 0 8px}
+.zone-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:.72rem;font-weight:800;margin:2px}
+.zone-dot{width:10px;height:10px;border-radius:50%}
+@media(max-width:750px){.tactical-grid,.tool-grid,.weather-card{grid-template-columns:1fr}.marker-row{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
 <header>
 <h1>HazMat Respuesta Inicial</h1>
-<div class="sub">Sprint 4 · v0.5 · recursos, checklists y reportes</div>
+<div class="sub">Sprint 5 · v0.6 · motor táctico y meteorología</div>
 <nav>
 <button class="tab active" data-view="incident">Incidente</button>
 <button class="tab" data-view="mapview">Mapa</button>
 <button class="tab" data-view="ics">Comando</button>
 <button class="tab" data-view="operations">Operaciones</button>
+<button class="tab" data-view="tactical">Táctico</button>
+<button class="tab" data-view="tools">Herramientas</button>
 <button class="tab" data-view="reports">Reportes</button>
 <button class="tab" data-view="history">Historial</button>
 </nav>
@@ -273,6 +288,123 @@ footer{font-size:.7rem;color:var(--muted);padding:8px 4px 24px;line-height:1.4}
 <div id="reportPreview" class="report-preview">
 <h1>Reporte HazMat</h1>
 <p>No hay datos para mostrar.</p>
+</div>
+</div>
+</section>
+
+
+<section id="tactical" class="view">
+<div class="card">
+<h2>Motor táctico</h2>
+<div class="warning">Las zonas y ubicaciones tácticas son ayudas de planificación. Deben ajustarse según monitoreo, topografía, accesos, evolución del incidente y criterio del Comandante.</div>
+<div class="tactical-grid" style="margin-top:10px">
+<div>
+<label>Radio zona tibia sugerida (m)</label>
+<input id="warmRadius" type="number" min="0" value="300">
+</div>
+<div>
+<label>Radio zona fría sugerida (m)</label>
+<input id="coldRadius" type="number" min="0" value="600">
+</div>
+</div>
+<div class="actions" style="margin-top:10px">
+<button class="primary" id="applyTacticalZones">Aplicar zonas tácticas</button>
+<button class="secondary" id="clearTacticalZones">Limpiar zonas tácticas</button>
+</div>
+<div style="margin-top:10px">
+<span class="zone-chip"><i class="zone-dot" style="background:#d32f2f"></i>Caliente</span>
+<span class="zone-chip"><i class="zone-dot" style="background:#fb8c00"></i>Tibia</span>
+<span class="zone-chip"><i class="zone-dot" style="background:#43a047"></i>Fría</span>
+</div>
+</div>
+
+<div class="card">
+<h2>Marcadores tácticos</h2>
+<div class="grid">
+<div><label>Tipo</label><select id="markerType">
+<option value="command">Puesto de Comando</option>
+<option value="decon">Descontaminación</option>
+<option value="staging">Área de espera</option>
+<option value="medical">Área médica</option>
+<option value="access">Control de acceso</option>
+<option value="police">Policía / corte</option>
+<option value="hazmat">Unidad HazMat</option>
+<option value="fire">Autobomba</option>
+<option value="ambulance">Ambulancia</option>
+<option value="drone">Drone</option>
+<option value="press">Prensa</option>
+<option value="sensitive">Receptor sensible</option>
+</select></div>
+<div><label>Nombre / indicativo</label><input id="markerName" placeholder="Ej.: PC Alfa"></div>
+</div>
+<div class="actions" style="margin-top:10px">
+<button class="primary" id="addTacticalMarker">Agregar en el centro del mapa</button>
+<button class="secondary" id="saveTactical">Guardar configuración</button>
+</div>
+<div id="tacticalMarkerList" class="marker-list" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+<h2>Meteorología manual</h2>
+<div class="weather-card">
+<div><label>Temperatura (°C)</label><input id="wxTemp" type="number" step="0.1" value="20"></div>
+<div><label>Humedad relativa (%)</label><input id="wxHumidity" type="number" step="1" value="60"></div>
+<div><label>Viento (km/h)</label><input id="wxWindSpeed" type="number" step="0.1" value="10"></div>
+<div><label>Dirección DESDE (°)</label><input id="wxWindDir" type="number" min="0" max="359" value="90"></div>
+<div><label>Nubosidad</label><select id="wxCloud"><option>Despejado</option><option>Parcial</option><option>Cubierto</option></select></div>
+<div><label>Estabilidad</label><select id="wxStability"><option>Desconocida</option><option>Inestable</option><option>Neutral</option><option>Estable</option></select></div>
+</div>
+<div class="actions" style="margin-top:10px">
+<button class="primary" id="applyWeather">Aplicar al incidente</button>
+<button class="secondary" id="exportWeather">Exportar meteorología</button>
+</div>
+</div>
+</section>
+
+
+<section id="tools" class="view">
+<div class="card">
+<h2>Calculadoras rápidas</h2>
+<div class="tool-grid">
+<div class="tool-card">
+<h3>Distancia</h3>
+<label>Metros</label><input id="meters" type="number" step="any">
+<label>Kilómetros</label><input id="kilometers" type="number" step="any">
+<label>Pies</label><input id="feet" type="number" step="any">
+<label>Millas</label><input id="miles" type="number" step="any">
+<button class="secondary wide" id="convertDistance">Convertir</button>
+</div>
+
+<div class="tool-card">
+<h3>Volumen</h3>
+<label>Litros</label><input id="liters" type="number" step="any">
+<label>Galones US</label><input id="gallons" type="number" step="any">
+<button class="secondary wide" id="convertVolume">Convertir</button>
+</div>
+
+<div class="tool-card">
+<h3>Temperatura</h3>
+<label>°C</label><input id="celsius" type="number" step="any">
+<label>°F</label><input id="fahrenheit" type="number" step="any">
+<button class="secondary wide" id="convertTemp">Convertir</button>
+</div>
+
+<div class="tool-card">
+<h3>Concentración</h3>
+<label>ppm</label><input id="ppm" type="number" step="any">
+<label>Peso molecular (g/mol)</label><input id="mw" type="number" step="any" value="17.03">
+<label>mg/m³</label><input id="mgm3" type="number" step="any">
+<button class="secondary wide" id="convertConcentration">Convertir a 25 °C y 1 atm</button>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>Exportación táctica</h2>
+<div class="actions3">
+<button class="secondary" id="exportTacticalGeoJSON">GeoJSON táctico</button>
+<button class="secondary" id="exportTacticalCSV">CSV de marcadores</button>
+<button class="secondary" id="exportCombinedKML">KML combinado</button>
 </div>
 </div>
 </section>

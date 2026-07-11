@@ -1,29 +1,44 @@
-# HazMat Respuesta Inicial v0.5 — Sprint 4
+# HazMat Respuesta Inicial v0.6 — Sprint 5
 
-## Nuevo módulo Operaciones
-- Inventario operativo por incidente.
-- EPP, SCBA y trajes químicos.
-- Monitoreo y detección.
-- Recursos de descontaminación.
-- Unidades y apoyo.
-- Cantidad y estado de cada recurso.
-- Plan de tareas con responsable y estado.
-- Registro cronológico de eventos y decisiones.
-- Checklist operativo de 12 controles.
-- Guardado local y exportación JSON.
+## Motor táctico
+- Zonas caliente, tibia y fría.
+- Radios configurables para zona tibia y fría.
+- Marcadores tácticos arrastrables:
+  - Puesto de Comando.
+  - Descontaminación.
+  - Área de espera.
+  - Área médica.
+  - Control de acceso.
+  - Policía/corte.
+  - Unidad HazMat.
+  - Autobomba.
+  - Ambulancia.
+  - Drone.
+  - Prensa.
+  - Receptor sensible.
+- Estado y nombre de cada marcador.
+- Guardado local por incidente.
 
-## Nuevo módulo Reportes
-- Reporte consolidado del incidente.
-- Datos químicos y distancias GRE.
-- Organización SCI.
-- Objetivos.
-- Equipos y recursos.
-- Plan de tareas.
-- Registro cronológico.
-- Estado y conclusión.
-- Impresión o guardado como PDF desde Android/Chrome.
-- Exportación HTML.
+## Meteorología
+- Temperatura.
+- Humedad.
+- Velocidad y dirección del viento.
+- Nubosidad.
+- Estabilidad.
+- Aplicación de la dirección al mapa.
+- Exportación JSON.
+
+## Calculadoras
+- Metros, kilómetros, pies y millas.
+- Litros y galones.
+- Celsius y Fahrenheit.
+- ppm y mg/m³ a 25 °C y 1 atm.
+
+## Exportaciones
+- GeoJSON táctico.
+- CSV de marcadores.
+- KML combinado con incidente y recursos tácticos.
 
 ## Actualización
-Reemplace todos los archivos del repositorio con esta versión y haga commit.
-Cierre y vuelva a abrir la PWA. Si la caché anterior persiste, reinstale la aplicación.
+Reemplace todos los archivos del repositorio y haga commit.
+Cierre y vuelva a abrir la PWA. Si la caché persiste, reinstale la aplicación.

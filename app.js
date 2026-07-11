@@ -2,7 +2,7 @@
 const CATALOG=window.GRE_CATALOG||[], T1=window.GRE_TABLE1||{}, T3=window.GRE_TABLE3||{};
 const $=id=>document.getElementById(id), winds={light:0,moderate:1,strong:2};
 let current=null,map,marker,isoLayer,protectLayer,windLine,measureMode=false,measurePts=[],measureLayer;
-function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current)renderMap()},80);if(id==='history')renderHistory();if(id==='ics')loadICSView();if(id==='operations')loadOperations();if(id==='reports')buildReport()}
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current)renderMap()},80);if(id==='history')renderHistory();if(id==='ics')loadICSView();if(id==='operations')loadOperations();if(id==='reports')buildReport();if(id==='tactical')loadTactical();if(id==='tools'){} }
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showView(t.dataset.view));
 
 const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -339,3 +339,107 @@ function buildReport(){
 $('buildReport').onclick=buildReport;
 $('printReport').onclick=()=>{buildReport();window.print()};
 $('exportReport').onclick=()=>{buildReport();const html=`<!doctype html><meta charset="utf-8"><title>Reporte HazMat</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:30px auto;line-height:1.45}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:7px;text-align:left}h2{border-bottom:1px solid #ccc}</style>${$('reportPreview').innerHTML}`;download(`Reporte_${safeName(current?.title||'HazMat')}.html`,html,'text/html')};
+
+
+// ---------------- Sprint 5: Motor táctico, meteorología y calculadoras ----------------
+let tacticalMarkers=[], tacticalLayers=[], tacticalZoneLayers=[];
+const TACTICAL_ICONS={
+ command:['PC','#6a1b9a'],decon:['DEC','#ef6c00'],staging:['STG','#1565c0'],medical:['MED','#2e7d32'],
+ access:['ACC','#5d4037'],police:['POL','#263238'],hazmat:['HM','#f9a825'],fire:['FIRE','#c62828'],
+ ambulance:['AMB','#00897b'],drone:['DRN','#3949ab'],press:['PRE','#8d6e63'],sensitive:['SEN','#ad1457']
+};
+function tacticalKey(){return current?`hazmatTACT:${current.id}`:'hazmatTACT:draft'}
+function getTactical(){try{return JSON.parse(localStorage.getItem(tacticalKey())||'null')}catch{return null}}
+function loadTactical(){
+ const p=getTactical();
+ tacticalMarkers=p?.markers||tacticalMarkers||[];
+ if(p?.warmRadius)$('warmRadius').value=p.warmRadius;
+ if(p?.coldRadius)$('coldRadius').value=p.coldRadius;
+ if(p?.weather){
+   $('wxTemp').value=p.weather.temp??20;$('wxHumidity').value=p.weather.humidity??60;
+   $('wxWindSpeed').value=p.weather.windSpeed??10;$('wxWindDir').value=p.weather.windDir??90;
+   $('wxCloud').value=p.weather.cloud||'Despejado';$('wxStability').value=p.weather.stability||'Desconocida'
+ }
+ renderTacticalList();if(map){renderTacticalMarkers();applyTacticalZones(false)}
+}
+function tacticalIcon(type){
+ const [txt,color]=TACTICAL_ICONS[type]||['?','#555'];
+ return L.divIcon({className:'',html:`<div style="width:34px;height:34px;border-radius:50%;background:${color};color:#fff;border:3px solid #fff;box-shadow:0 1px 5px #0008;display:flex;align-items:center;justify-content:center;font:700 10px Arial">${txt}</div>`,iconSize:[34,34],iconAnchor:[17,17]})
+}
+function addTacticalAtCenter(){
+ initMap();const c=map.getCenter(),type=$('markerType').value,name=$('markerName').value||$('markerType').selectedOptions[0].text;
+ tacticalMarkers.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),type,name,lat:c.lat,lon:c.lng,status:'Activo'});
+ renderTacticalList();renderTacticalMarkers()
+}
+$('addTacticalMarker').onclick=addTacticalAtCenter;
+function renderTacticalMarkers(){
+ if(!map)return;tacticalLayers.forEach(x=>map.removeLayer(x));tacticalLayers=[];
+ tacticalMarkers.forEach(m=>{
+  const layer=L.marker([m.lat,m.lon],{draggable:true,icon:tacticalIcon(m.type)}).addTo(map).bindPopup(`<b>${escapeHtml(m.name)}</b><br>${escapeHtml(m.type)} · ${escapeHtml(m.status)}`);
+  layer.on('dragend',e=>{const p=e.target.getLatLng();m.lat=p.lat;m.lon=p.lng;renderTacticalList()});
+  tacticalLayers.push(layer)
+ })
+}
+function renderTacticalList(){
+ if(!$('tacticalMarkerList'))return;
+ $('tacticalMarkerList').innerHTML=tacticalMarkers.map(m=>`<div class="marker-row">
+ <input value="${escapeHtml(m.name)}" data-mid="${m.id}" data-field="name">
+ <select data-mid="${m.id}" data-field="status"><option>Activo</option><option>Disponible</option><option>Asignado</option><option>Fuera de servicio</option></select>
+ <span class="pill ok">${escapeHtml(m.type)}</span>
+ <button class="danger" data-remove="${m.id}">Quitar</button></div>`).join('')||'<p class="small">No hay marcadores tácticos.</p>';
+ tacticalMarkers.forEach(m=>{const s=document.querySelector(`[data-mid="${m.id}"][data-field="status"]`);if(s)s.value=m.status});
+ document.querySelectorAll('[data-mid]').forEach(el=>el.onchange=()=>{const m=tacticalMarkers.find(x=>x.id===el.dataset.mid);if(m)m[el.dataset.field]=el.value;renderTacticalMarkers()});
+ document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{tacticalMarkers=tacticalMarkers.filter(x=>x.id!==b.dataset.remove);renderTacticalList();renderTacticalMarkers()})
+}
+function applyTacticalZones(fit=true){
+ if(!map||!current)return;
+ tacticalZoneLayers.forEach(x=>map.removeLayer(x));tacticalZoneLayers=[];
+ const warm=+$('warmRadius').value||0,cold=+$('coldRadius').value||0;
+ if(warm>0)tacticalZoneLayers.push(L.circle([current.lat,current.lon],{radius:warm,color:'#ef6c00',weight:2,fillColor:'#fb8c00',fillOpacity:.08,dashArray:'8,6'}).addTo(map));
+ if(cold>0)tacticalZoneLayers.push(L.circle([current.lat,current.lon],{radius:cold,color:'#2e7d32',weight:2,fillColor:'#43a047',fillOpacity:.05,dashArray:'10,7'}).addTo(map));
+ if(fit&&tacticalZoneLayers.length)map.fitBounds(L.featureGroup(tacticalZoneLayers).getBounds().pad(.1))
+}
+$('applyTacticalZones').onclick=()=>{showView('mapview');setTimeout(()=>applyTacticalZones(true),120)};
+$('clearTacticalZones').onclick=()=>{tacticalZoneLayers.forEach(x=>map&&map.removeLayer(x));tacticalZoneLayers=[]};
+function collectTactical(){
+ return {version:'0.6',incidentId:current?.id||null,warmRadius:+$('warmRadius').value||0,coldRadius:+$('coldRadius').value||0,markers:tacticalMarkers,weather:{temp:+$('wxTemp').value,humidity:+$('wxHumidity').value,windSpeed:+$('wxWindSpeed').value,windDir:+$('wxWindDir').value,cloud:$('wxCloud').value,stability:$('wxStability').value},updatedAt:new Date().toISOString()}
+}
+$('saveTactical').onclick=()=>{localStorage.setItem(tacticalKey(),JSON.stringify(collectTactical()));alert('Configuración táctica guardada')};
+$('applyWeather').onclick=()=>{
+ if(current){current.bearing=((+$('wxWindDir').value%360)+360)%360;$('bearing').value=current.bearing;if(map)renderMap()}
+ localStorage.setItem(tacticalKey(),JSON.stringify(collectTactical()));alert('Meteorología aplicada al incidente')
+};
+$('exportWeather').onclick=()=>download(`Meteorologia_${safeName(current?.title||'Incidente')}.json`,JSON.stringify(collectTactical().weather,null,2),'application/json');
+
+$('convertDistance').onclick=()=>{
+ let m=parseFloat($('meters').value);if(!Number.isFinite(m)){let km=parseFloat($('kilometers').value),ft=parseFloat($('feet').value),mi=parseFloat($('miles').value);if(Number.isFinite(km))m=km*1000;else if(Number.isFinite(ft))m=ft/3.280839895;else if(Number.isFinite(mi))m=mi*1609.344}
+ if(!Number.isFinite(m))return alert('Ingrese un valor');$('meters').value=m.toFixed(3);$('kilometers').value=(m/1000).toFixed(6);$('feet').value=(m*3.280839895).toFixed(3);$('miles').value=(m/1609.344).toFixed(6)
+};
+$('convertVolume').onclick=()=>{let l=parseFloat($('liters').value);if(!Number.isFinite(l)){let g=parseFloat($('gallons').value);if(Number.isFinite(g))l=g*3.785411784}if(!Number.isFinite(l))return alert('Ingrese un valor');$('liters').value=l.toFixed(3);$('gallons').value=(l/3.785411784).toFixed(3)};
+$('convertTemp').onclick=()=>{let c=parseFloat($('celsius').value);if(!Number.isFinite(c)){let f=parseFloat($('fahrenheit').value);if(Number.isFinite(f))c=(f-32)*5/9}if(!Number.isFinite(c))return alert('Ingrese un valor');$('celsius').value=c.toFixed(2);$('fahrenheit').value=(c*9/5+32).toFixed(2)};
+$('convertConcentration').onclick=()=>{let ppm=parseFloat($('ppm').value),mw=parseFloat($('mw').value),mg=parseFloat($('mgm3').value);if(!Number.isFinite(mw)||mw<=0)return alert('Peso molecular inválido');if(Number.isFinite(ppm))mg=ppm*mw/24.45;else if(Number.isFinite(mg))ppm=mg*24.45/mw;else return alert('Ingrese ppm o mg/m³');$('ppm').value=ppm.toFixed(3);$('mgm3').value=mg.toFixed(3)};
+
+function tacticalGeoJSON(){
+ const p=collectTactical(),features=[];
+ if(current){
+  features.push({type:'Feature',properties:{kind:'incident',un:current.un,name:current.name},geometry:{type:'Point',coordinates:[current.lon,current.lat]}});
+  const circles=[['warm_zone',p.warmRadius],['cold_zone',p.coldRadius]];
+  circles.forEach(([kind,r])=>{if(r>0){let coords=[];for(let b=0;b<=360;b+=5){let [la,lo]=destination(current.lat,current.lon,b,r);coords.push([lo,la])}features.push({type:'Feature',properties:{kind,radius_m:r},geometry:{type:'Polygon',coordinates:[coords]}})}})
+ }
+ p.markers.forEach(m=>features.push({type:'Feature',properties:{kind:'tactical_marker',type:m.type,name:m.name,status:m.status},geometry:{type:'Point',coordinates:[m.lon,m.lat]}}));
+ return {type:'FeatureCollection',features}
+}
+$('exportTacticalGeoJSON').onclick=()=>download(`Tactico_${safeName(current?.title||'Incidente')}.geojson`,JSON.stringify(tacticalGeoJSON(),null,2),'application/geo+json');
+$('exportTacticalCSV').onclick=()=>{
+ const rows=[['tipo','nombre','estado','latitud','longitud'],...tacticalMarkers.map(m=>[m.type,m.name,m.status,m.lat,m.lon])];
+ const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+ download(`Marcadores_${safeName(current?.title||'Incidente')}.csv`,csv,'text/csv')
+};
+function tacticalKMLPlacemarks(){
+ return tacticalMarkers.map(m=>`<Placemark><name>${escapeHtml(m.name)}</name><description>${escapeHtml(m.type)} · ${escapeHtml(m.status)}</description><Point><coordinates>${m.lon},${m.lat},0</coordinates></Point></Placemark>`).join('')
+}
+$('exportCombinedKML').onclick=()=>{
+ if(!current)return alert('No hay incidente activo');
+ let base=toKML(current).replace('</Document></kml>',tacticalKMLPlacemarks()+'</Document></kml>');
+ download(`UN${current.un}_${safeName(current.title)}_TACTICO.kml`,base,'application/vnd.google-earth.kml+xml')
+};
