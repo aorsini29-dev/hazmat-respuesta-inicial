@@ -1,25 +1,18 @@
-# HazMat Respuesta Inicial — PWA Android (alfa)
+# HazMat Respuesta Inicial v0.3 — Sprint 2
 
-## Instalación en Android
-Esta entrega es una PWA. Para instalarla necesita publicarse bajo HTTPS.
+## Incorporado
+- Buscador por número ONU o nombre.
+- 2511 denominaciones del índice amarillo de la GRE 2024.
+- Número de guía asociado a cada denominación.
+- Selección de derrame pequeño o grande.
+- 115 filas de Tabla 1 estructuradas para cálculo.
+- Tabla 3 completa para los seis gases PTI comunes ya validados.
+- La aplicación bloquea el cálculo cuando una sustancia está identificada pero su fila de Tabla 1 aún no fue estructurada.
+- Fuente del resultado guardada en historial, KML y GeoJSON.
 
-1. Descomprima el ZIP.
-2. Publique la carpeta en GitHub Pages, Netlify, Cloudflare Pages o un servidor HTTPS institucional.
-3. Abra la dirección en Chrome desde Android.
-4. Menú ⋮ → **Instalar aplicación** o **Agregar a pantalla principal**.
-5. Luego del primer acceso funciona sin conexión.
+## Actualización
+Reemplace todos los archivos del repositorio por los de esta carpeta y haga commit.
+La app puede conservar caché anterior: cierre y abra nuevamente; si fuera necesario, desinstale e instale la PWA.
 
-## Prueba rápida
-- UN1005
-- Autotanque o remolque
-- Noche
-- Viento leve
-- Este → Oeste
-Resultado esperado: aislamiento 150 m y acción protectora 2,0 km.
-
-## Alcance
-Incluye la Tabla 3 de GRE 2024 para UN1005, UN1017, UN1040, UN1050/2186, UN1052 y UN1079.
-Solo derrames grandes (>208 L).
-
-## Limitaciones
-No incluye todavía mapa base, incendio, Tabla 1 completa, autenticación, PDF, ALOHA ni almacenamiento en nube.
+## Importante
+El catálogo de identificación es más amplio que el motor de cálculo. La presencia de una sustancia en el buscador no implica que esta versión pueda calcular sus distancias.

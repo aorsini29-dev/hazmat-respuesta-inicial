@@ -3,83 +3,117 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#b3261e">
+<meta name="theme-color" content="#9f1d16">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <title>HazMat Respuesta Inicial</title>
 <style>
-:root{--red:#b3261e;--orange:#f57c00;--yellow:#ffd54f;--green:#2e7d32;--blue:#1565c0;--ink:#17202a;--muted:#5f6368;--bg:#f5f7fa;--card:#fff}
-*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
-header{background:linear-gradient(135deg,#8e1712,var(--red));color:#fff;padding:18px 16px 16px;position:sticky;top:0;z-index:5;box-shadow:0 2px 10px #0004}
-header h1{font-size:1.25rem;margin:0} header p{margin:4px 0 0;font-size:.82rem;opacity:.9}
-main{max-width:860px;margin:auto;padding:14px}
-.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #00000012}
-h2{font-size:1.02rem;margin:0 0 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:5px}
-input,select,textarea{width:100%;padding:12px;border:1px solid #ccd2d8;border-radius:10px;background:#fff;font-size:1rem}
-button{border:0;border-radius:12px;padding:13px 15px;font-size:.95rem;font-weight:800;cursor:pointer}
-.primary{background:var(--red);color:#fff;width:100%}.secondary{background:#e8eef6;color:#17324d}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.result{display:none}.metric{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric div{border-radius:14px;padding:14px;text-align:center}.metric .iso{background:#ffebee;border:2px solid #d32f2f}.metric .protect{background:#fff8e1;border:2px solid #f9a825}
-.big{font-size:1.7rem;font-weight:900}.small{font-size:.76rem;color:var(--muted)}
-.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:.74rem;font-weight:800;background:#e8f5e9;color:#1b5e20}
-.warning{background:#fff3e0;border-left:5px solid var(--orange);padding:12px;border-radius:8px;font-size:.84rem;line-height:1.4}
-svg{width:100%;height:auto;background:#eef3f7;border-radius:14px;border:1px solid #dbe2e8}
-.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.75rem;margin-top:8px}.dot{width:12px;height:12px;display:inline-block;border-radius:3px;margin-right:4px}
-footer{font-size:.72rem;color:var(--muted);padding:5px 4px 25px;line-height:1.4}
-@media(max-width:620px){.grid{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.metric{grid-template-columns:1fr}}
+:root{--red:#9f1d16;--red2:#c62828;--orange:#ef6c00;--yellow:#fdd835;--blue:#1565c0;--ink:#17202a;--muted:#66717c;--bg:#eef2f6;--card:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,#75100d,var(--red));color:#fff;padding:15px 16px;position:sticky;top:0;z-index:1001;box-shadow:0 2px 12px #0005}
+header h1{font-size:1.2rem;margin:0}.sub{font-size:.78rem;opacity:.9;margin-top:3px}
+nav{display:flex;gap:6px;margin-top:10px;overflow:auto}.tab{background:#ffffff20;color:#fff;border:1px solid #ffffff35;padding:8px 11px;border-radius:999px;white-space:nowrap}.tab.active{background:#fff;color:var(--red)}
+main{max-width:1050px;margin:auto;padding:12px}.view{display:none}.view.active{display:block}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px #00000012}
+h2{font-size:1rem;margin:0 0 11px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+label{display:block;font-size:.75rem;font-weight:800;color:var(--muted);margin-bottom:4px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #cbd3dc;border-radius:10px;background:#fff;font-size:.98rem}
+button{border:0;border-radius:11px;padding:12px 13px;font-weight:800;font-size:.91rem;cursor:pointer}.primary{background:var(--red);color:#fff}.secondary{background:#e7eef6;color:#16324f}.danger{background:#ffebee;color:#b71c1c}.wide{width:100%}
+.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.actions3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#map{height:55vh;min-height:400px;border-radius:14px;overflow:hidden;background:#dfe7ed}.mapnote{font-size:.75rem;color:var(--muted);margin-top:7px}
+.metric{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metric>div{padding:13px;border-radius:13px;text-align:center}.iso{background:#ffebee;border:2px solid #d32f2f}.protect{background:#fff8e1;border:2px solid #f9a825}.big{font-size:1.55rem;font-weight:900}.small{font-size:.74rem;color:var(--muted)}
+.warning{background:#fff3e0;border-left:5px solid var(--orange);padding:11px;border-radius:8px;font-size:.82rem;line-height:1.4}
+.badge{display:inline-block;background:#e8f5e9;color:#1b5e20;padding:5px 9px;border-radius:999px;font-size:.72rem;font-weight:900}
+.history-item{border:1px solid #dbe2e8;border-radius:13px;padding:11px;margin-bottom:8px}.history-title{font-weight:900}.history-meta{font-size:.75rem;color:var(--muted);margin:4px 0 9px}.mini-actions{display:flex;gap:7px;flex-wrap:wrap}.mini-actions button{padding:8px 10px;font-size:.78rem}
+#measureStatus{font-size:.78rem;color:var(--muted);margin-top:7px}.hidden{display:none!important}
+footer{font-size:.7rem;color:var(--muted);padding:8px 4px 24px;line-height:1.4}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.actions3{grid-template-columns:1fr}.metric{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header><h1>HazMat Respuesta Inicial</h1><p>Versión alfa · GRE 2024 · Seis gases PTI comunes</p></header>
+<header>
+<h1>HazMat Respuesta Inicial</h1>
+<div class="sub">Sprint 2 · v0.3 · catálogo GRE, Tabla 1 y Tabla 3</div>
+<nav>
+<button class="tab active" data-view="incident">Incidente</button>
+<button class="tab" data-view="mapview">Mapa</button>
+<button class="tab" data-view="history">Historial</button>
+</nav>
+</header>
 <main>
-<section class="card">
-<h2>1. Datos del incidente</h2>
+<section id="incident" class="view active">
+<div class="card">
+<h2>Datos del incidente</h2>
 <div class="grid">
-<div><label>Número ONU / sustancia</label><select id="un"></select></div>
-<div><label>Contenedor</label><select id="container"></select></div>
+<div><label>Buscar por ONU o nombre</label><input id="searchChemical" placeholder="Ej.: 1017, cloro, amoníaco"></div>
+<div><label>Resultado seleccionado</label><select id="un"></select></div>
+<div><label>Tamaño del derrame</label><select id="spillSize"><option value="small">Pequeño (≤208 L)</option><option value="large" selected>Grande (&gt;208 L)</option></select></div>
+<div id="containerWrap"><label>Contenedor (Tabla 3)</label><select id="container"></select></div>
 <div><label>Momento</label><select id="period"><option value="day">Día</option><option value="night">Noche</option></select></div>
 <div><label>Velocidad del viento</label><select id="wind"><option value="light">Leve (&lt;10 km/h)</option><option value="moderate">Moderado (10–20 km/h)</option><option value="strong">Fuerte (&gt;20 km/h)</option></select></div>
-<div><label>Dirección DESDE donde sopla (°)</label><input id="bearing" type="number" min="0" max="359" value="90"></div>
-<div><label>Descripción del viento</label><select id="windPreset"><option value="90">Este → Oeste</option><option value="270">Oeste → Este</option><option value="0">Norte → Sur</option><option value="180">Sur → Norte</option><option value="">Personalizada</option></select></div>
+<div><label>Viento DESDE (grados)</label><input id="bearing" type="number" min="0" max="359" value="90"></div>
+<div><label>Dirección rápida</label><select id="windPreset"><option value="90">Este → Oeste</option><option value="270">Oeste → Este</option><option value="0">Norte → Sur</option><option value="180">Sur → Norte</option><option value="">Personalizada</option></select></div>
 <div><label>Latitud</label><input id="lat" type="number" step="any" value="-32.7446389"></div>
 <div><label>Longitud</label><input id="lon" type="number" step="any" value="-60.7318222"></div>
+<div><label>Nombre / referencia del incidente</label><input id="title" value="Incidente HazMat"></div>
+<div><label>Observaciones</label><input id="notes" placeholder="Ej.: fuga en válvula superior"></div>
 </div>
-<div style="margin-top:12px" class="actions">
-<button class="secondary" id="gps">Usar ubicación GPS</button>
-<button class="primary" id="calc">Calcular zonas</button>
+<div style="margin-top:11px" class="actions3">
+<button class="secondary" id="gps">Usar GPS</button>
+<button class="secondary" id="compass">Usar brújula</button>
+<button class="primary" id="calc">Calcular y mostrar</button>
 </div>
-</section>
+</div>
 
-<section class="card result" id="result">
-<h2>2. Resultado inicial</h2>
-<div><span class="badge" id="source">GRE 2024 · Tabla 3</span></div>
+<div class="card hidden" id="resultCard">
+<h2>Resultado inicial</h2>
+<span class="badge">GRE 2024 · Tabla 3</span>
 <p><strong id="chemical"></strong><br><span class="small" id="scenario"></span></p>
 <div class="metric">
 <div class="iso"><div class="small">AISLAMIENTO INICIAL</div><div class="big" id="iso"></div><div class="small">a la redonda</div></div>
 <div class="protect"><div class="small">ACCIÓN PROTECTORA</div><div class="big" id="protect"></div><div class="small">a sotavento</div></div>
 </div>
-<div style="margin-top:14px" class="warning" id="warn"></div>
-</section>
-
-<section class="card result" id="mapCard">
-<h2>3. Esquema operativo</h2>
-<svg id="diagram" viewBox="0 0 700 480" role="img" aria-label="Esquema de aislamiento y acción protectora"></svg>
-<div class="legend"><span><i class="dot" style="background:#d32f2f"></i>Aislamiento</span><span><i class="dot" style="background:#ffd54f"></i>Acción protectora</span><span><i class="dot" style="background:#1565c0"></i>Viento a sotavento</span></div>
-</section>
-
-<section class="card result" id="exportCard">
-<h2>4. Exportar</h2>
-<div class="actions">
-<button class="secondary" id="kml">Descargar KML</button>
-<button class="secondary" id="json">Guardar incidente JSON</button>
+<div style="margin-top:11px" class="warning" id="warn"></div>
+<div style="margin-top:10px" class="actions">
+<button class="primary" id="save">Guardar incidente</button>
+<button class="secondary" id="goMap">Ver mapa</button>
+</div>
 </div>
 </section>
 
-<section class="card">
-<h2>Alcance y limitaciones</h2>
-<div class="warning">Herramienta de apoyo para la fase inicial. No sustituye la GRE 2024, la evaluación del Comandante del Incidente, el monitoreo atmosférico ni un modelo de dispersión como ALOHA. Las zonas deben ajustarse ante incendio, cambio de viento, topografía, liberación continua o condiciones no contempladas.</div>
+<section id="mapview" class="view">
+<div class="card">
+<h2>Mapa operativo</h2>
+<div id="map"></div>
+<div class="mapnote">Tocá el mapa para mover el incidente. El marcador también puede arrastrarse. Las capas base requieren conexión; las zonas y cálculos permanecen disponibles.</div>
+<div class="actions3" style="margin-top:10px">
+<button class="secondary" id="measure">Medir distancia</button>
+<button class="secondary" id="clearMeasure">Limpiar medición</button>
+<button class="secondary" id="centerMap">Centrar incidente</button>
+</div>
+<div id="measureStatus">Medición desactivada.</div>
+</div>
+<div class="card">
+<h2>Exportar incidente actual</h2>
+<div class="actions3">
+<button class="secondary" id="kml">KML</button>
+<button class="secondary" id="geojson">GeoJSON</button>
+<button class="secondary" id="json">JSON</button>
+</div>
+</div>
 </section>
-<footer>Base controlada: UN1005, UN1017, UN1040, UN1050/2186, UN1052 y UN1079. Derrames grandes (&gt;208 L), conforme a la Tabla 3 de la GRE 2024. “11,0+ km” indica que la distancia puede ser mayor bajo ciertas condiciones atmosféricas.</footer>
+
+<section id="history" class="view">
+<div class="card">
+<h2>Incidentes guardados</h2>
+<div id="historyList"></div>
+<button class="danger wide" id="clearHistory">Eliminar todo el historial</button>
+</div>
+</section>
+<footer>Versión alfa para capacitación y evaluación. Catálogo de búsqueda: 2511 denominaciones extraídas del índice amarillo. Tabla 1 con 115 filas estructuradas y Tabla 3 para seis gases PTI. No sustituye la GRE 2024, el Comando del Incidente, el monitoreo atmosférico ni ALOHA.</footer>
 </main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="gre-data.js"></script>
 <script src="app.js"></script>
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js')}</script>
 </body></html>

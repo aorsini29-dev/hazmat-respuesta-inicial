@@ -1,11 +1,11 @@
 {
-  "name": "HazMat Respuesta Inicial",
+  "name": "HazMat Respuesta Inicial v0.3",
   "short_name": "HazMat RI",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f5f7fa",
-  "theme_color": "#b3261e",
-  "description": "Cálculo inicial GRE 2024 para seis gases PTI comunes.",
+  "background_color": "#eef2f6",
+  "theme_color": "#9f1d16",
+  "description": "Catálogo GRE 2024, Tabla 1 y Tabla 3 con mapa operativo.",
   "icons": [
     {
       "src": "icon-192.svg",
