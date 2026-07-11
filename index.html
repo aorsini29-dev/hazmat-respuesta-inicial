@@ -105,6 +105,21 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
 .good{background:#e8f5e9;border-left:5px solid #2e7d32}
 @media(max-width:700px){.ppe-grid{grid-template-columns:1fr}}
 
+
+.library-toolbar{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:8px}
+.library-stats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.stat-card{background:#f7f9fb;border:1px solid #dce3ea;border-radius:12px;padding:9px 11px;font-size:.78rem}
+.library-list{display:grid;gap:8px;max-height:60vh;overflow:auto}
+.substance-card{border:1px solid #d8e0e7;border-radius:12px;padding:11px;background:#fff}
+.substance-title{font-weight:900;font-size:.93rem}
+.substance-meta{font-size:.75rem;color:#66717c;margin-top:4px}
+.aliases{font-size:.78rem;line-height:1.35;margin-top:7px}
+.tag{display:inline-block;padding:4px 7px;border-radius:999px;font-size:.68rem;font-weight:800;margin:3px 3px 0 0;background:#edf2f7;color:#263238}
+.tag.green{background:#e8f5e9;color:#1b5e20}.tag.orange{background:#fff3e0;color:#e65100}.tag.red{background:#ffebee;color:#b71c1c}
+.library-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.library-actions button{padding:8px 10px;font-size:.77rem}
+@media(max-width:760px){.library-toolbar{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -113,7 +128,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
   <button id="menuBtn" class="menu-btn" aria-label="Abrir menú">☰</button>
   <div class="header-title">
     <h1>HazMat Respuesta Inicial</h1>
-    <div class="sub">v0.7 · Selector de EPP HazMat</div>
+    <div class="sub">v0.8 · Biblioteca completa GRE 2024</div>
   </div>
   <div id="statusBar" class="status-strip">Sin incidente activo</div>
 </header>
@@ -130,6 +145,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
     <button class="tab" data-view="ics">👨‍🚒 Comando</button>
     <button class="tab" data-view="operations">🚒 Operaciones</button>
 <button class="tab" data-view="ppe">🧤 Selector de EPP</button>
+<button class="tab" data-view="library">📚 Biblioteca GRE</button>
     <button class="tab" data-view="tactical">📍 Táctico</button>
     <button class="tab" data-view="tools">🧮 Herramientas</button>
     <button class="tab" data-view="reports">📄 Reportes</button>
@@ -449,6 +465,37 @@ La recomendación es conservadora y orientativa. No constituye una autorización
 </div>
 </section>
 
+
+<section id="library" class="view">
+<div class="card">
+<h2>Biblioteca de sustancias GRE 2024</h2>
+<div class="warning">
+La biblioteca permite identificar sustancias por número ONU, denominación o alias y consultar la guía asociada. La disponibilidad de una sustancia en el catálogo no implica que todas sus distancias, instrucciones o propiedades estén estructuradas en esta versión.
+</div>
+<div class="library-toolbar" style="margin-top:10px">
+<input id="librarySearch" placeholder="Buscar ONU, nombre o alias">
+<select id="libraryGuide"><option value="">Todas las guías</option></select>
+<select id="libraryFilter">
+<option value="">Todos los registros</option>
+<option value="table1">Con Tabla 1 estructurada</option>
+<option value="table3">Con Tabla 3</option>
+<option value="ppe">Con selector de EPP</option>
+<option value="polymerization">Con riesgo de polimerización (P)</option>
+</select>
+<select id="librarySort">
+<option value="un">Ordenar por ONU</option>
+<option value="name">Ordenar por nombre</option>
+</select>
+</div>
+<div class="library-stats">
+<div class="stat-card"><strong id="statUN">0</strong><br>Números ONU</div>
+<div class="stat-card"><strong id="statNames">0</strong><br>Denominaciones y alias</div>
+<div class="stat-card"><strong id="statResults">0</strong><br>Resultados visibles</div>
+</div>
+<div id="libraryList" class="library-list"></div>
+</div>
+</section>
+
 <section id="tactical" class="view">
 <div class="card">
 <h2>Motor táctico</h2>
@@ -576,6 +623,7 @@ La recomendación es conservadora y orientativa. No constituye una autorización
 </main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="gre-data.js"></script>
+<script src="gre-full-catalog.js"></script>
 <script src="app.js"></script>
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js')}</script>
 </body></html>

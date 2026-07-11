@@ -16,7 +16,7 @@ function showView(id){
  if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current){renderMap();renderTacticalMarkers();applyTacticalZones(false)}},100);
  if(id==='history')renderHistory();
  if(id==='ics')loadICSView();
- if(id==='operations')loadOperations();if(id==='ppe')loadPPE();
+ if(id==='operations')loadOperations();if(id==='ppe')loadPPE();if(id==='library')loadLibrary();
  if(id==='reports')buildReport();
  if(id==='tactical')loadTactical();
 }
@@ -692,4 +692,84 @@ Condición: ${r.decision}
 Advertencias: ${(r.warnings||[]).join(' | ')||'Ninguna registrada'}
 Datos faltantes: ${(r.missing||[]).join(' | ')||'Ninguno registrado'}`;
   try{await navigator.clipboard.writeText(txt);alert('Resumen copiado')}catch{alert(txt)}
+};
+
+
+// ---------------- v0.8: Biblioteca completa de identificación GRE ----------------
+const FULL_CATALOG=window.GRE_FULL_CATALOG||[];
+const GROUPED_UN=window.GRE_GROUPED_UN||[];
+let libraryInitialized=false;
+
+function normalizedText(value){
+  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+function loadLibrary(){
+  if(!libraryInitialized){
+    const guides=[...new Set(FULL_CATALOG.map(x=>x.guide))].sort((a,b)=>parseInt(a)-parseInt(b)||a.localeCompare(b));
+    $('libraryGuide').innerHTML='<option value="">Todas las guías</option>'+guides.map(g=>`<option value="${g}">Guía ${g}</option>`).join('');
+    $('statUN').textContent=GROUPED_UN.length.toLocaleString('es-AR');
+    $('statNames').textContent=FULL_CATALOG.length.toLocaleString('es-AR');
+    ['librarySearch','libraryGuide','libraryFilter','librarySort'].forEach(id=>{
+      $(id).addEventListener(id==='librarySearch'?'input':'change',renderLibrary)
+    });
+    libraryInitialized=true
+  }
+  renderLibrary()
+}
+function filteredLibrary(){
+  const q=normalizedText($('librarySearch').value).trim(),guide=$('libraryGuide').value,filter=$('libraryFilter').value;
+  let rows=GROUPED_UN.filter(x=>{
+    if(guide&&!x.guides.includes(guide))return false;
+    if(filter==='table1'&&!x.table1)return false;
+    if(filter==='table3'&&!x.table3)return false;
+    if(filter==='ppe'&&!x.ppe)return false;
+    if(filter==='polymerization'&&!x.polymerization)return false;
+    if(q){
+      const hay=normalizedText(x.un+' '+x.guides.join(' ')+' '+x.names.join(' '));
+      if(!hay.includes(q))return false
+    }
+    return true
+  });
+  const sort=$('librarySort').value;
+  rows.sort(sort==='name'?(a,b)=>(a.names[0]||'').localeCompare(b.names[0]||'','es'):(a,b)=>a.un.localeCompare(b.un));
+  return rows
+}
+function renderLibrary(){
+  const rows=filteredLibrary();
+  $('statResults').textContent=rows.length.toLocaleString('es-AR');
+  const visible=rows.slice(0,400);
+  $('libraryList').innerHTML=visible.map(x=>{
+    const aliases=x.names.slice(0,8);
+    const more=x.names.length-aliases.length;
+    return `<div class="substance-card">
+      <div class="substance-title">UN ${x.un} — ${escapeHtml(x.names[0]||'Sin denominación')}</div>
+      <div class="substance-meta">Guía(s): ${x.guides.map(escapeHtml).join(', ')}</div>
+      <div>
+        ${x.table1?'<span class="tag green">Tabla 1</span>':''}
+        ${x.table3?'<span class="tag green">Tabla 3</span>':''}
+        ${x.ppe?'<span class="tag orange">Selector EPP</span>':''}
+        ${x.polymerization?'<span class="tag red">Polimerización P</span>':''}
+      </div>
+      <div class="aliases"><strong>Denominaciones:</strong><br>${aliases.map(escapeHtml).join('<br>')}${more>0?`<br><em>+ ${more} alias adicionales</em>`:''}</div>
+      <div class="library-actions">
+        <button class="primary" onclick="selectLibraryUN('${x.un}')">Usar en incidente</button>
+        ${x.ppe?`<button class="secondary" onclick="selectLibraryPPE('${x.un}')">Evaluar EPP</button>`:''}
+      </div>
+    </div>`
+  }).join('')+(rows.length>400?`<div class="warning">Se muestran los primeros 400 resultados. Refine la búsqueda para ver registros específicos.</div>`:'');
+}
+window.selectLibraryUN=un=>{
+  showView('incident');
+  $('searchChemical').value=un;
+  fillUN(un);
+  const option=[...$('un').options].find(o=>o.value===un);
+  if(option){$('un').value=un;updateScenarioControls()}
+  window.scrollTo({top:0,behavior:'smooth'})
+};
+window.selectLibraryPPE=un=>{
+  const rec=GROUPED_UN.find(x=>x.un===un);
+  if(!rec)return;
+  current=current||{id:'library-'+un,title:`UN ${un}`,un,name:rec.names[0]||'',guide:rec.guides[0]||'',lat:+$('lat').value,lon:+$('lon').value,bearing:+$('bearing').value,isolation_m:0,protective_km:0,source:'Biblioteca GRE 2024'};
+  current.un=un;current.name=rec.names[0]||current.name;current.guide=rec.guides[0]||current.guide;
+  showView('ppe');loadPPE()
 };

@@ -1,11 +1,11 @@
 {
-  "name": "HazMat Respuesta Inicial v0.7",
+  "name": "HazMat Respuesta Inicial v0.8",
   "short_name": "HazMat RI",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eef2f6",
   "theme_color": "#9f1d16",
-  "description": "GRE 2024, SCI, motor táctico y selector preliminar de EPP HazMat.",
+  "description": "Biblioteca ampliada GRE 2024, búsqueda por ONU y alias, SCI, mapa y selector EPP.",
   "icons": [
     {
       "src": "icon-192.svg",

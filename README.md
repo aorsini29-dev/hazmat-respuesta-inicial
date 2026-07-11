@@ -1,38 +1,18 @@
-# HazMat Respuesta Inicial v0.7 — Selector de EPP
+# HazMat Respuesta Inicial v0.8 — Biblioteca GRE 2024
 
-## Nuevo módulo
-Selector preliminar de equipo de protección personal según:
-- Sustancia y número ONU.
-- Tarea.
-- Estado físico.
-- Concentración.
-- Oxígeno.
-- Tipo de contacto.
-- Incendio o calor.
-- Compatibilidad química.
-- Calidad del monitoreo.
+## Biblioteca incorporada
+- 1.979 números ONU únicos.
+- 2.953 denominaciones y alias extraídos de los índices amarillo y azul.
+- Búsqueda por número ONU. nombre. alias y guía.
+- Filtros por Tabla 1. Tabla 3. selector EPP y guía con sufijo P.
+- Acceso directo desde la biblioteca al formulario del incidente.
+- Acceso directo al selector EPP para sustancias parametrizadas.
+- Funcionamiento local y sin conexión después de la primera carga.
 
-## Sustancias parametrizadas
-- UN1005 Amoníaco anhidro.
-- UN1017 Cloro.
-- UN1040 Óxido de etileno.
-- UN1050 Cloruro de hidrógeno anhidro.
-- UN2186 Cloruro de hidrógeno líquido refrigerado.
-- UN1052 Fluoruro de hidrógeno anhidro.
-- UN1079 Dióxido de azufre.
-
-## Funciones
-- Recomendación orientativa de Nivel A, B, C o EPP de zona fría.
-- Protección respiratoria.
-- Traje químico.
-- Guantes y botas.
-- Advertencias críticas.
-- Datos faltantes.
-- Guardado local.
-- Exportación JSON.
-- Copia de resumen.
-- Incorporación al reporte consolidado.
+## Alcance
+La biblioteca estructura la identificación de las sustancias detalladas en los índices de la GRE 2024.
+Las instrucciones completas de las guías naranjas. tablas. carteles y textos extensos permanecen como consulta de la publicación original.
 
 ## Actualización
-Reemplace todos los archivos del repositorio y haga commit.
-Luego cierre y vuelva a abrir la PWA. Si conserva la versión anterior, reinstale la aplicación.
+Reemplace todos los archivos del repositorio. incluido `gre-full-catalog.js`. y haga commit.
+Luego cierre y vuelva a abrir la PWA. Si aparece una versión anterior. reinstale la aplicación.
