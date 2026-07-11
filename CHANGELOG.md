@@ -1,12 +1,11 @@
 # CHANGELOG
 
-## v0.4 — Sprint 3
-- Módulo SCI/ICS.
-- Comando único y unificado.
-- Organización inicial y expandida HazMat.
-- Asignación de 12 funciones.
-- Objetivos editables.
-- Checklist de seguridad y control.
-- Recursos y estados.
-- Persistencia local por incidente.
-- Exportación JSON del plan.
+## v0.5 — Sprint 4
+- Gestión de equipos y recursos.
+- Checklists operativos.
+- Plan de tareas.
+- Registro cronológico.
+- Guardado por incidente.
+- Reporte consolidado.
+- Impresión / Guardar como PDF.
+- Exportación HTML y JSON.

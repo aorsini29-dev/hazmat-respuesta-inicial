@@ -1,21 +1,29 @@
-# HazMat Respuesta Inicial v0.4 — Sprint 3
+# HazMat Respuesta Inicial v0.5 — Sprint 4
 
-## Nuevo módulo: Sistema de Comando de Incidentes
-- Comando único o unificado.
-- Estructura inicial o expandida HazMat.
-- Asignación de Comandante del Incidente, Seguridad, Enlace, Información Pública y Grupo HazMat.
-- Funciones HazMat: entrada, respaldo, descontaminación, control de acceso, especialista técnico y EMS.
-- Objetivos del período operacional.
-- Checklist de 15 controles críticos.
-- Barra de avance del plan.
-- Registro de recursos y estado.
-- Guardado local por incidente.
-- Exportación del plan en JSON.
-- Resumen operativo automático.
+## Nuevo módulo Operaciones
+- Inventario operativo por incidente.
+- EPP, SCBA y trajes químicos.
+- Monitoreo y detección.
+- Recursos de descontaminación.
+- Unidades y apoyo.
+- Cantidad y estado de cada recurso.
+- Plan de tareas con responsable y estado.
+- Registro cronológico de eventos y decisiones.
+- Checklist operativo de 12 controles.
+- Guardado local y exportación JSON.
+
+## Nuevo módulo Reportes
+- Reporte consolidado del incidente.
+- Datos químicos y distancias GRE.
+- Organización SCI.
+- Objetivos.
+- Equipos y recursos.
+- Plan de tareas.
+- Registro cronológico.
+- Estado y conclusión.
+- Impresión o guardado como PDF desde Android/Chrome.
+- Exportación HTML.
 
 ## Actualización
-Reemplace todos los archivos del repositorio por los de esta carpeta, incluyendo `gre-data.js`, y haga commit.
-Debido al cambio del service worker, puede ser necesario cerrar y volver a abrir la PWA o reinstalarla.
-
-## Alcance
-Es una ayuda organizativa. La autoridad competente debe definir procedimientos, calificaciones, terminología y formularios oficiales.
+Reemplace todos los archivos del repositorio con esta versión y haga commit.
+Cierre y vuelva a abrir la PWA. Si la caché anterior persiste, reinstale la aplicación.

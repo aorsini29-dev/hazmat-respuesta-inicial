@@ -38,16 +38,38 @@ footer{font-size:.7rem;color:var(--muted);padding:8px 4px 24px;line-height:1.4}
 .summarybox{background:#f7f9fb;border:1px solid #dce3ea;border-radius:12px;padding:11px;font-size:.8rem;line-height:1.45;white-space:pre-wrap}
 @media(max-width:650px){.org-grid{grid-template-columns:1fr}}
 
+
+.ops-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.equipment-card,.task-card,.log-card{border:1px solid #d8e0e7;border-radius:13px;padding:11px;background:#fbfcfd}
+.equipment-card h3,.task-card h3{font-size:.88rem;margin:0 0 8px}
+.equipment-row,.task-row,.log-row{display:grid;grid-template-columns:1.4fr .8fr .8fr auto;gap:7px;margin-bottom:8px;align-items:center}
+.task-row{grid-template-columns:1.3fr .8fr .8fr auto}
+.log-row{grid-template-columns:.7fr 1.2fr 1.8fr auto}
+.equipment-row input,.equipment-row select,.task-row input,.task-row select,.log-row input{padding:9px;font-size:.86rem}
+.pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:.7rem;font-weight:800}
+.ok{background:#e8f5e9;color:#1b5e20}.pending{background:#fff3e0;color:#e65100}.critical{background:#ffebee;color:#b71c1c}
+.report-preview{background:#fff;border:1px solid #d8e0e7;border-radius:12px;padding:18px;line-height:1.45}
+.report-preview h1{font-size:1.3rem;margin:0 0 6px}.report-preview h2{font-size:1rem;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}
+.report-preview table{width:100%;border-collapse:collapse;font-size:.8rem}.report-preview th,.report-preview td{border:1px solid #d9dfe5;padding:6px;text-align:left}
+.toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:750px){.ops-grid{grid-template-columns:1fr}.equipment-row,.task-row,.log-row{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}}
+@media print{
+ body{background:#fff}header,nav,.tab,.no-print,.view:not(#reports){display:none!important}
+ #reports{display:block!important}.report-preview{border:0;padding:0}.card{box-shadow:none;border:0}
+}
+
 </style>
 </head>
 <body>
 <header>
 <h1>HazMat Respuesta Inicial</h1>
-<div class="sub">Sprint 3 · v0.4 · Sistema de Comando de Incidentes</div>
+<div class="sub">Sprint 4 · v0.5 · recursos, checklists y reportes</div>
 <nav>
 <button class="tab active" data-view="incident">Incidente</button>
 <button class="tab" data-view="mapview">Mapa</button>
 <button class="tab" data-view="ics">Comando</button>
+<button class="tab" data-view="operations">Operaciones</button>
+<button class="tab" data-view="reports">Reportes</button>
 <button class="tab" data-view="history">Historial</button>
 </nav>
 </header>
@@ -173,6 +195,85 @@ footer{font-size:.7rem;color:var(--muted);padding:8px 4px 24px;line-height:1.4}
 <button class="secondary" id="exportICS">Exportar plan JSON</button>
 </div>
 <div class="summarybox" id="icsSummary" style="margin-top:10px">No hay un plan guardado.</div>
+</div>
+</section>
+
+
+<section id="operations" class="view">
+<div class="card">
+<h2>Recursos y equipos</h2>
+<div class="warning">Registrar disponibilidad no reemplaza la inspección previa al uso. Verifique competencia, compatibilidad química, calibración, autonomía y condición del equipo.</div>
+<div class="ops-grid" style="margin-top:10px">
+<div class="equipment-card">
+<h3>Protección respiratoria y química</h3>
+<div id="ppeList"></div>
+<button class="secondary wide" id="addPPE">Agregar equipo</button>
+</div>
+<div class="equipment-card">
+<h3>Monitoreo y detección</h3>
+<div id="monitorList"></div>
+<button class="secondary wide" id="addMonitor">Agregar detector</button>
+</div>
+<div class="equipment-card">
+<h3>Descontaminación</h3>
+<div id="deconList"></div>
+<button class="secondary wide" id="addDecon">Agregar recurso</button>
+</div>
+<div class="equipment-card">
+<h3>Unidades y apoyo</h3>
+<div id="unitList"></div>
+<button class="secondary wide" id="addUnit">Agregar unidad</button>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>Plan de tareas</h2>
+<div id="taskList"></div>
+<button class="secondary wide" id="addTask">Agregar tarea</button>
+</div>
+
+<div class="card">
+<h2>Registro cronológico</h2>
+<div id="logList"></div>
+<button class="secondary wide" id="addLog">Agregar registro</button>
+</div>
+
+<div class="card">
+<h2>Control operativo</h2>
+<div class="checklist" id="opsChecklist"></div>
+<div style="margin-top:10px">
+<div class="small" id="opsProgressText">0 de 0 completados</div>
+<div class="statusbar"><div id="opsProgressBar"></div></div>
+</div>
+<div class="actions" style="margin-top:10px">
+<button class="primary" id="saveOperations">Guardar operaciones</button>
+<button class="secondary" id="exportOperations">Exportar JSON</button>
+</div>
+</div>
+</section>
+
+
+<section id="reports" class="view">
+<div class="card no-print">
+<h2>Generar reporte</h2>
+<div class="grid">
+<div><label>Responsable del reporte</label><input id="reportAuthor" placeholder="Nombre / función"></div>
+<div><label>Estado del incidente</label><select id="incidentStatus"><option>En evaluación</option><option>Activo</option><option>Estabilizado</option><option>Controlado</option><option>Finalizado</option></select></div>
+<div><label>Conclusión / situación actual</label><textarea id="reportConclusion" rows="3" placeholder="Resumen de situación"></textarea></div>
+<div><label>Próximas acciones</label><textarea id="nextActions" rows="3" placeholder="Acciones pendientes"></textarea></div>
+</div>
+<div class="toolbar" style="margin-top:10px">
+<button class="primary" id="buildReport">Actualizar vista previa</button>
+<button class="secondary" id="printReport">Imprimir / Guardar PDF</button>
+<button class="secondary" id="exportReport">Exportar HTML</button>
+</div>
+</div>
+<div class="card">
+<div id="reportPreview" class="report-preview">
+<h1>Reporte HazMat</h1>
+<p>No hay datos para mostrar.</p>
+</div>
 </div>
 </section>
 
