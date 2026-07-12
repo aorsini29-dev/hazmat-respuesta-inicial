@@ -16,7 +16,7 @@ function showView(id){
  if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current){renderMap();renderTacticalMarkers();applyTacticalZones(false)}},100);
  if(id==='history')renderHistory();
  if(id==='ics')loadICSView();
- if(id==='operations')loadOperations();if(id==='ppe')loadPPE();if(id==='library')loadLibrary();if(id==='technical')loadTechnical();
+ if(id==='operations')loadOperations();if(id==='ppe')loadPPE();if(id==='library')loadLibrary();if(id==='technical')loadTechnical();if(id==='weather')loadWeatherModule();
  if(id==='reports')buildReport();
  if(id==='tactical')loadTactical();
 }
@@ -469,8 +469,8 @@ $('exportCombinedKML').onclick=()=>{
 function updateGlobalStatus(){
  const el=document.getElementById('statusBar');if(!el)return;
  if(!current){el.textContent='Sin incidente activo';return}
- const wx=getTactical()?.weather;
- const windTxt=wx?`${Math.round(wx.windDir||current.bearing)}° · ${wx.windSpeed??'-'} km/h`:`${Math.round(current.bearing)}°`;
+ const wx=activeWeather||getTactical()?.weather;
+ const wxDir=wx?.windDirection??wx?.windDir??current.bearing;const wxSpd=wx?.windSpeed;const windTxt=wx?`${Math.round(wxDir)}° · ${wxSpd??'-'} km/h`:`${Math.round(current.bearing)}°`;
  el.textContent=`UN ${current.un} | ${current.name} | Viento ${windTxt} | Aislamiento ${current.isolation_m} m | Acción protectora ${current.protective_km} km`;
 }
 
@@ -854,4 +854,186 @@ Incompatibilidades: ${r.incompatibilities.join(' | ')}
 Extinción: ${r.extinguishing.join(' | ')}
 EPP: ${r.ppe}`;
  try{await navigator.clipboard.writeText(text);alert('Ficha copiada')}catch{alert(text)}
+};
+
+
+// ---------------- v1.0: Meteorología automática ----------------
+let remoteWeather=null,activeWeather=null;
+
+function weatherKey(){return current?`hazmatWX:${current.id}`:'hazmatWX:draft'}
+function savedWeather(){try{return JSON.parse(localStorage.getItem(weatherKey())||'null')}catch{return null}}
+
+function loadWeatherModule(){
+ const saved=savedWeather();
+ if(saved){remoteWeather=saved.remote||null;activeWeather=saved.active||null;$('weatherNotes').value=saved.notes||'';$('weatherConfidence').value=saved.confidence||'medium'}
+ if(remoteWeather)renderRemoteWeather(remoteWeather);
+ if(activeWeather)renderActiveWeather();
+ updateWeatherSourceCards();
+}
+
+function openMeteoURL(lat,lon){
+ const currentVars=[
+  'temperature_2m','relative_humidity_2m','apparent_temperature','cloud_cover',
+  'surface_pressure','wind_speed_10m','wind_direction_10m','wind_gusts_10m',
+  'weather_code','is_day'
+ ].join(',');
+ const hourlyVars=['temperature_2m','relative_humidity_2m','wind_speed_10m','wind_direction_10m','wind_gusts_10m','cloud_cover'].join(',');
+ return `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&current=${currentVars}&hourly=${hourlyVars}&forecast_hours=12&wind_speed_unit=kmh&timezone=auto`;
+}
+async function fetchAutomaticWeather(){
+ const lat=current?.lat??+$('lat').value,lon=current?.lon??+$('lon').value;
+ if(!Number.isFinite(lat)||!Number.isFinite(lon))return setWeatherStatus('Coordenadas inválidas.','error');
+ setWeatherStatus('Consultando Open-Meteo…','warn');
+ try{
+  const response=await fetch(openMeteoURL(lat,lon),{cache:'no-store'});
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const data=await response.json();
+  if(!data.current)throw new Error('Respuesta sin condiciones actuales');
+  remoteWeather={
+   source:'Open-Meteo',
+   providerType:'modelo meteorológico',
+   latitude:data.latitude,longitude:data.longitude,elevation:data.elevation,
+   timezone:data.timezone,timezoneAbbreviation:data.timezone_abbreviation,
+   fetchedAt:new Date().toISOString(),
+   observedAt:data.current.time,
+   interval:data.current.interval,
+   temperature:data.current.temperature_2m,
+   relativeHumidity:data.current.relative_humidity_2m,
+   apparentTemperature:data.current.apparent_temperature,
+   cloudCover:data.current.cloud_cover,
+   surfacePressure:data.current.surface_pressure,
+   windSpeed:data.current.wind_speed_10m,
+   windDirection:data.current.wind_direction_10m,
+   windGust:data.current.wind_gusts_10m,
+   weatherCode:data.current.weather_code,
+   isDay:data.current.is_day,
+   units:data.current_units,
+   hourly:extractHourly(data)
+  };
+  renderRemoteWeather(remoteWeather);
+  activeWeather=remoteWeather;
+  renderActiveWeather();
+  updateWeatherSourceCards();
+  setWeatherStatus(`Datos recibidos para ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}.`, 'ok');
+ }catch(error){
+  console.error(error);
+  setWeatherStatus(`No fue posible obtener meteorología automática: ${error.message}`, 'error')
+ }
+}
+function extractHourly(data){
+ const h=data.hourly||{},times=h.time||[];
+ return times.slice(0,12).map((time,i)=>({
+   time,
+   temperature:h.temperature_2m?.[i],
+   relativeHumidity:h.relative_humidity_2m?.[i],
+   windSpeed:h.wind_speed_10m?.[i],
+   windDirection:h.wind_direction_10m?.[i],
+   windGust:h.wind_gusts_10m?.[i],
+   cloudCover:h.cloud_cover?.[i]
+ }))
+}
+function cardinal(deg){
+ const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
+ return dirs[Math.round((((+deg%360)+360)%360)/22.5)%16]
+}
+function fmt(v,suffix=''){return Number.isFinite(+v)?`${Math.round(+v*10)/10}${suffix}`:'—'}
+function renderRemoteWeather(w){
+ $('wxCurrentTemp').textContent=fmt(w.temperature,' °C');
+ $('wxCurrentRH').textContent=fmt(w.relativeHumidity,' %');
+ $('wxCurrentWind').textContent=fmt(w.windSpeed,' km/h');
+ $('wxCurrentDir').textContent=Number.isFinite(+w.windDirection)?`${Math.round(w.windDirection)}° ${cardinal(w.windDirection)}`:'—';
+ $('wxCurrentGust').textContent=fmt(w.windGust,' km/h');
+ $('wxCurrentCloud').textContent=fmt(w.cloudCover,' %');
+ $('wxCurrentPressure').textContent=fmt(w.surfacePressure,' hPa');
+ $('wxCurrentTime').textContent=w.observedAt?new Date(w.observedAt).toLocaleString():'—';
+ $('weatherForecast').innerHTML=(w.hourly||[]).slice(0,6).map(x=>`<div class="wx-hour">
+ <strong>${new Date(x.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong>
+ Temp: ${fmt(x.temperature,' °C')}<br>
+ Viento: ${fmt(x.windSpeed,' km/h')}<br>
+ Desde: ${Number.isFinite(+x.windDirection)?Math.round(x.windDirection)+'° '+cardinal(x.windDirection):'—'}<br>
+ Ráfaga: ${fmt(x.windGust,' km/h')}<br>
+ Nubes: ${fmt(x.cloudCover,' %')}
+ </div>`).join('')||'<div class="small">Sin pronóstico.</div>'
+}
+function manualWeatherRecord(){
+ const p=collectTactical();
+ return {
+  source:'Ingreso manual',
+  providerType:'manual',
+  observedAt:new Date().toISOString(),
+  temperature:p.weather.temp,
+  relativeHumidity:p.weather.humidity,
+  windSpeed:p.weather.windSpeed,
+  windDirection:p.weather.windDir,
+  cloudCover:null,
+  windGust:null,
+  surfacePressure:null
+ }
+}
+function localWeatherRecord(){
+ return {
+  source:'Medición local',
+  providerType:'instrumento en escena',
+  observedAt:new Date().toISOString(),
+  temperature:+$('wxTemp').value,
+  relativeHumidity:+$('wxHumidity').value,
+  windSpeed:+$('wxWindSpeed').value,
+  windDirection:+$('wxWindDir').value,
+  cloudCover:null,
+  windGust:null,
+  surfacePressure:null
+ }
+}
+function renderActiveWeather(){
+ $('activeWeatherSource').value=activeWeather?.source||'Sin definir';
+ $('activeWeatherTime').value=activeWeather?.observedAt?new Date(activeWeather.observedAt).toLocaleString():'';
+ updateGlobalStatus()
+}
+function updateWeatherSourceCards(){
+ ['sourceLocal','sourceManual','sourceRemote'].forEach(id=>$(id)?.classList.remove('active'));
+ if(!activeWeather)return;
+ if(activeWeather.source==='Medición local')$('sourceLocal')?.classList.add('active');
+ if(activeWeather.source==='Ingreso manual')$('sourceManual')?.classList.add('active');
+ if(activeWeather.source==='Open-Meteo')$('sourceRemote')?.classList.add('active')
+}
+function setWeatherStatus(text,type='warn'){
+ const el=$('weatherStatus');el.textContent=text;el.className=`wx-status wx-${type}`
+}
+$('fetchWeather').onclick=fetchAutomaticWeather;
+$('refreshWeather').onclick=fetchAutomaticWeather;
+$('useDeviceLocationWeather').onclick=()=>{
+ if(!navigator.geolocation)return setWeatherStatus('GPS no disponible.','error');
+ navigator.geolocation.getCurrentPosition(p=>{
+   $('lat').value=p.coords.latitude.toFixed(7);$('lon').value=p.coords.longitude.toFixed(7);
+   if(current){current.lat=p.coords.latitude;current.lon=p.coords.longitude}
+   fetchAutomaticWeather()
+ },e=>setWeatherStatus(`No fue posible obtener GPS: ${e.message}`,'error'),{enableHighAccuracy:true})
+};
+$('activateLocalWeather').onclick=()=>{activeWeather=localWeatherRecord();renderActiveWeather();updateWeatherSourceCards();setWeatherStatus('Medición local seleccionada como fuente activa.','ok')};
+$('activateManualWeather').onclick=()=>{activeWeather=manualWeatherRecord();renderActiveWeather();updateWeatherSourceCards();setWeatherStatus('Ingreso manual seleccionado como fuente activa.','ok')};
+$('activateRemoteWeather').onclick=()=>{
+ if(!remoteWeather)return setWeatherStatus('Primero obtenga datos automáticos.','warn');
+ activeWeather=remoteWeather;renderActiveWeather();updateWeatherSourceCards();setWeatherStatus('Open-Meteo seleccionado como fuente activa.','ok')
+};
+$('applyActiveWeather').onclick=()=>{
+ if(!activeWeather)return alert('Seleccione una fuente meteorológica');
+ if(current){
+   current.bearing=((+activeWeather.windDirection%360)+360)%360;
+   current.weather={...activeWeather,confidence:$('weatherConfidence').value,notes:$('weatherNotes').value};
+   $('bearing').value=current.bearing;
+   if(map)renderMap();
+ }
+ $('wxWindDir').value=activeWeather.windDirection??'';
+ $('wxWindSpeed').value=activeWeather.windSpeed??'';
+ if(Number.isFinite(+activeWeather.temperature))$('wxTemp').value=activeWeather.temperature;
+ if(Number.isFinite(+activeWeather.relativeHumidity))$('wxHumidity').value=activeWeather.relativeHumidity;
+ updateGlobalStatus();alert('Meteorología aplicada al incidente y al mapa')
+};
+$('saveWeatherRecord').onclick=()=>{
+ const payload={version:'1.0',incidentId:current?.id||null,remote:remoteWeather,active:activeWeather,notes:$('weatherNotes').value,confidence:$('weatherConfidence').value,savedAt:new Date().toISOString()};
+ localStorage.setItem(weatherKey(),JSON.stringify(payload));alert('Registro meteorológico guardado')
+};
+$('exportWeatherRecord').onclick=()=>{
+ const payload={version:'1.0',incident:current?{id:current.id,title:current.title,lat:current.lat,lon:current.lon}:null,remote:remoteWeather,active:activeWeather,notes:$('weatherNotes').value,confidence:$('weatherConfidence').value,exportedAt:new Date().toISOString()};
+ download(`Meteorologia_${safeName(current?.title||'Incidente')}.json`,JSON.stringify(payload,null,2),'application/json')
 };

@@ -1,11 +1,11 @@
 {
-  "name": "HazMat Respuesta Inicial v0.9",
+  "name": "HazMat Respuesta Inicial v1.0",
   "short_name": "HazMat RI",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eef2f6",
   "theme_color": "#9f1d16",
-  "description": "Fichas técnicas enriquecidas, GRE 2024, NFPA 704, GHS, incompatibilidades y EPP.",
+  "description": "Meteorología automática, GRE 2024, SCI, mapa táctico y fichas técnicas.",
   "icons": [
     {
       "src": "icon-192.svg",

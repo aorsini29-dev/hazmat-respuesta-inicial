@@ -1,32 +1,33 @@
-# HazMat Respuesta Inicial v0.9 — Sprint 6
+# HazMat Respuesta Inicial v1.0 — Sprint 7
 
-## Nuevo módulo: Ficha técnica enriquecida
-Incluye una arquitectura modular y una base inicial con 15 sustancias frecuentes.
+## Meteorología automática
+- Consulta por coordenadas mediante Open-Meteo.
+- No requiere clave de API.
+- Temperatura.
+- Humedad relativa.
+- Viento a 10 m.
+- Dirección desde donde sopla.
+- Ráfagas.
+- Nubosidad.
+- Presión superficial.
+- Hora y zona horaria del dato.
+- Pronóstico horario próximo.
 
-### Contenido
-- Estado físico y comportamiento.
-- Riesgos principales.
-- NFPA 704 representado gráficamente.
-- Pictogramas GHS.
-- Incompatibilidades.
-- Agentes y estrategia de extinción.
-- Productos de combustión/descomposición.
-- Primeros auxilios iniciales.
-- EPP preliminar.
-- Observaciones operativas.
-- Estado y fecha de validación.
+## Jerarquía de fuentes
+1. Medición local en escena.
+2. Ingreso manual verificado.
+3. Servicio meteorológico remoto.
 
-### Estados de calidad
-- Validada: revisión técnica inicial completada.
-- Parcial: requiere verificación adicional antes de adopción institucional.
-- Pendiente: estructura disponible, datos aún no revisados.
+## Integración
+- Aplicación de la dirección del viento al mapa.
+- Registro de fuente, confianza y observaciones.
+- Guardado local por incidente.
+- Exportación JSON.
+- Barra global de estado actualizada.
 
-### Sustancias iniciales
-UN1005, UN1017, UN1040, UN1050, UN1052, UN1079, UN1090, UN1170, UN1203, UN1219, UN1230, UN1789, UN1824, UN1830 y UN2031.
-
-## Archivos de datos
-- `technical-data.js`: consumo offline por la PWA.
-- `data/substances-enriched.json`: base portable y auditable.
+## Importante
+Open-Meteo entrega condiciones actuales basadas en datos de modelos meteorológicos. La medición local conserva prioridad para decisiones operativas.
 
 ## Actualización
-Reemplace todos los archivos del repositorio y haga commit. Asegúrese de publicar también la carpeta `data`.
+Reemplace todos los archivos del repositorio y haga commit.
+La consulta automática requiere conexión a internet; el resto de la aplicación sigue funcionando offline.

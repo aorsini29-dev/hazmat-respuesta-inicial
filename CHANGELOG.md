@@ -1,12 +1,9 @@
 # CHANGELOG
 
-## v0.9 — Sprint 6
-- Módulo de fichas técnicas enriquecidas.
-- Base modular JSON.
-- NFPA 704 gráfico.
-- Pictogramas GHS.
-- Incompatibilidades.
-- Extinción y productos de combustión.
-- Primeros auxilios.
-- Estado de validación y trazabilidad.
-- Integración con Biblioteca GRE.
+## v1.0 — Sprint 7
+- Meteorología automática por coordenadas.
+- Integración Open-Meteo.
+- Condiciones actuales y pronóstico horario.
+- Jerarquía de fuentes meteorológicas.
+- Aplicación automática al mapa.
+- Persistencia y exportación del registro.

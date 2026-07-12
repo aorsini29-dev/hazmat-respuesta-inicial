@@ -138,6 +138,24 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
 .source-note{font-size:.72rem;color:#66717c;line-height:1.4}
 @media(max-width:700px){.tech-toolbar,.tech-head,.nfpa-wrap{grid-template-columns:1fr}}
 
+
+.weather-source-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.weather-main{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.wx-metric{background:#f7f9fb;border:1px solid #dce3ea;border-radius:12px;padding:11px;text-align:center}
+.wx-metric .value{font-size:1.35rem;font-weight:900}.wx-metric .label{font-size:.72rem;color:#66717c}
+.wx-source{border-radius:12px;padding:11px;border:1px solid #dce3ea;background:#fff}
+.wx-source.active{border:2px solid #2e7d32;background:#f1f8e9}
+.wx-source h3{font-size:.86rem;margin:0 0 5px}
+.wx-forecast{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:8px;overflow:auto}
+.wx-hour{border:1px solid #dce3ea;border-radius:11px;padding:9px;background:#fff;font-size:.75rem}
+.wx-hour strong{display:block;font-size:.9rem;margin-bottom:4px}
+.priority-list{display:grid;gap:8px}.priority-row{display:flex;gap:8px;align-items:flex-start;padding:9px;border:1px solid #e0e5ea;border-radius:10px}
+.priority-num{width:26px;height:26px;border-radius:50%;background:#9f1d16;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.78rem;flex:0 0 auto}
+.wx-status{padding:10px;border-radius:10px;font-size:.82rem;line-height:1.4}
+.wx-ok{background:#e8f5e9;border-left:5px solid #2e7d32}.wx-warn{background:#fff3e0;border-left:5px solid #ef6c00}.wx-error{background:#ffebee;border-left:5px solid #c62828}
+@media(max-width:760px){.weather-source-grid,.weather-main{grid-template-columns:1fr 1fr}.wx-forecast{grid-template-columns:repeat(6,135px)}}
+@media(max-width:480px){.weather-source-grid,.weather-main{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -146,7 +164,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
   <button id="menuBtn" class="menu-btn" aria-label="Abrir menú">☰</button>
   <div class="header-title">
     <h1>HazMat Respuesta Inicial</h1>
-    <div class="sub">v0.9 · Fichas técnicas enriquecidas</div>
+    <div class="sub">v1.0 · Meteorología automática</div>
   </div>
   <div id="statusBar" class="status-strip">Sin incidente activo</div>
 </header>
@@ -166,6 +184,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
 <button class="tab" data-view="library">📚 Biblioteca GRE</button>
 <button class="tab" data-view="technical">🧪 Ficha técnica</button>
     <button class="tab" data-view="tactical">📍 Táctico</button>
+<button class="tab" data-view="weather">🌦️ Meteorología</button>
     <button class="tab" data-view="tools">🧮 Herramientas</button>
     <button class="tab" data-view="reports">📄 Reportes</button>
     <button class="tab" data-view="history">🗂️ Historial</button>
@@ -654,6 +673,70 @@ Las fichas complementan la identificación GRE. Deben verificarse contra la SDS 
 <button class="secondary" id="exportTacticalGeoJSON">GeoJSON táctico</button>
 <button class="secondary" id="exportTacticalCSV">CSV de marcadores</button>
 <button class="secondary" id="exportCombinedKML">KML combinado</button>
+</div>
+</div>
+</section>
+
+
+<section id="weather" class="view">
+<div class="card">
+<h2>Meteorología del incidente</h2>
+<div class="warning">
+Los datos remotos son estimaciones de modelos meteorológicos y no reemplazan una medición local en la escena. Para decisiones tácticas, priorice estación portátil, manga de viento, anemómetro y observación directa.
+</div>
+<div class="actions3" style="margin-top:10px">
+<button class="primary" id="fetchWeather">Obtener datos automáticos</button>
+<button class="secondary" id="useDeviceLocationWeather">Usar ubicación GPS</button>
+<button class="secondary" id="refreshWeather">Actualizar</button>
+</div>
+<div id="weatherStatus" class="wx-status wx-warn" style="margin-top:10px">Sin consulta automática realizada.</div>
+</div>
+
+<div class="card">
+<h2>Condiciones actuales</h2>
+<div class="weather-main">
+<div class="wx-metric"><div class="value" id="wxCurrentTemp">—</div><div class="label">Temperatura</div></div>
+<div class="wx-metric"><div class="value" id="wxCurrentRH">—</div><div class="label">Humedad</div></div>
+<div class="wx-metric"><div class="value" id="wxCurrentWind">—</div><div class="label">Viento</div></div>
+<div class="wx-metric"><div class="value" id="wxCurrentDir">—</div><div class="label">Dirección desde</div></div>
+<div class="wx-metric"><div class="value" id="wxCurrentGust">—</div><div class="label">Ráfaga</div></div>
+<div class="wx-metric"><div class="value" id="wxCurrentCloud">—</div><div class="label">Nubosidad</div></div>
+<div class="wx-metric"><div class="value" id="wxCurrentPressure">—</div><div class="label">Presión</div></div>
+<div class="wx-metric"><div class="value" id="wxCurrentTime">—</div><div class="label">Hora del dato</div></div>
+</div>
+</div>
+
+<div class="card">
+<h2>Fuente activa y prioridad</h2>
+<div class="weather-source-grid">
+<div class="wx-source" id="sourceLocal"><h3>Medición local</h3><p class="small">Anemómetro, estación portátil o instrumento en escena.</p><button class="secondary wide" id="activateLocalWeather">Usar como fuente activa</button></div>
+<div class="wx-source" id="sourceManual"><h3>Ingreso manual</h3><p class="small">Valores cargados en el módulo Táctico.</p><button class="secondary wide" id="activateManualWeather">Usar como fuente activa</button></div>
+<div class="wx-source" id="sourceRemote"><h3>Open-Meteo</h3><p class="small">Condiciones actuales modeladas por coordenadas.</p><button class="secondary wide" id="activateRemoteWeather">Usar como fuente activa</button></div>
+</div>
+<div class="priority-list" style="margin-top:12px">
+<div class="priority-row"><div class="priority-num">1</div><div><strong>Medición local</strong><br><span class="small">Mayor prioridad para decisiones operativas.</span></div></div>
+<div class="priority-row"><div class="priority-num">2</div><div><strong>Ingreso manual verificado</strong><br><span class="small">Útil cuando proviene de una estación o informante confiable.</span></div></div>
+<div class="priority-row"><div class="priority-num">3</div><div><strong>Servicio meteorológico remoto</strong><br><span class="small">Referencia inicial y respaldo; puede no representar microclima o obstáculos.</span></div></div>
+</div>
+</div>
+
+<div class="card">
+<h2>Pronóstico horario próximo</h2>
+<div id="weatherForecast" class="wx-forecast"><div class="small">Sin pronóstico cargado.</div></div>
+</div>
+
+<div class="card">
+<h2>Aplicación al incidente</h2>
+<div class="grid">
+<div><label>Fuente activa</label><input id="activeWeatherSource" readonly value="Sin definir"></div>
+<div><label>Fecha/hora de la observación</label><input id="activeWeatherTime" readonly></div>
+<div><label>Observaciones</label><input id="weatherNotes" placeholder="Ej.: viento variable por edificios"></div>
+<div><label>Confianza operativa</label><select id="weatherConfidence"><option value="low">Baja</option><option value="medium" selected>Media</option><option value="high">Alta</option></select></div>
+</div>
+<div class="actions3" style="margin-top:10px">
+<button class="primary" id="applyActiveWeather">Aplicar al mapa</button>
+<button class="secondary" id="saveWeatherRecord">Guardar registro</button>
+<button class="secondary" id="exportWeatherRecord">Exportar JSON</button>
 </div>
 </div>
 </section>
