@@ -1,11 +1,11 @@
 {
-  "name": "HazMat Respuesta Inicial v1.0",
+  "name": "HazMat Respuesta Inicial v1.1",
   "short_name": "HazMat RI",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eef2f6",
   "theme_color": "#9f1d16",
-  "description": "Meteorología automática, GRE 2024, SCI, mapa táctico y fichas técnicas.",
+  "description": "Mapa táctico avanzado con receptores sensibles, hidrantes, hospitales, escuelas y capas OSM.",
   "icons": [
     {
       "src": "icon-192.svg",

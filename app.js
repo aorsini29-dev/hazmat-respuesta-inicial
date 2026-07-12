@@ -13,7 +13,7 @@ function showView(id){
  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));
  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));
  closeDrawer();
- if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current){renderMap();renderTacticalMarkers();applyTacticalZones(false)}},100);
+ if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current){renderMap();renderTacticalMarkers();applyTacticalZones(false)}},100);if(id==='advancedmap')setTimeout(()=>{initAdvancedMap();advancedMap.invalidateSize();renderAdvancedIncident()},120);
  if(id==='history')renderHistory();
  if(id==='ics')loadICSView();
  if(id==='operations')loadOperations();if(id==='ppe')loadPPE();if(id==='library')loadLibrary();if(id==='technical')loadTechnical();if(id==='weather')loadWeatherModule();
@@ -1037,3 +1037,140 @@ $('exportWeatherRecord').onclick=()=>{
  const payload={version:'1.0',incident:current?{id:current.id,title:current.title,lat:current.lat,lon:current.lon}:null,remote:remoteWeather,active:activeWeather,notes:$('weatherNotes').value,confidence:$('weatherConfidence').value,exportedAt:new Date().toISOString()};
  download(`Meteorologia_${safeName(current?.title||'Incidente')}.json`,JSON.stringify(payload,null,2),'application/json')
 };
+
+
+// ---------------- v1.1: Mapa táctico avanzado y receptores sensibles ----------------
+let advancedMap=null,advancedIncidentLayers=[],poiLayers=[],poiResults=[];
+const POI_STYLE={
+ hospitals:{label:'Hospital / clínica',color:'#d32f2f',icon:'H'},
+ schools:{label:'Escuela / jardín',color:'#f9a825',icon:'E'},
+ firestations:{label:'Bomberos',color:'#c62828',icon:'B'},
+ hydrants:{label:'Hidrante',color:'#1565c0',icon:'HI'},
+ waterways:{label:'Curso de agua',color:'#0288d1',icon:'A'},
+ industrial:{label:'Industrial',color:'#6d4c41',icon:'I'},
+ care:{label:'Residencia / cuidados',color:'#8e24aa',icon:'R'},
+ police:{label:'Policía',color:'#263238',icon:'P'},
+ shelters:{label:'Refugio / comunitario',color:'#2e7d32',icon:'C'}
+};
+function initAdvancedMap(){
+ if(advancedMap)return;
+ advancedMap=L.map('advancedMap').setView([+$('lat').value,+$('lon').value],13);
+ const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+ const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
+ osm.addTo(advancedMap);L.control.layers({'Calles':osm,'Satelital':sat},null,{collapsed:true}).addTo(advancedMap)
+}
+function advancedIcon(type){
+ const s=POI_STYLE[type]||{color:'#455a64',icon:'?'};
+ return L.divIcon({className:'',html:`<div style="width:30px;height:30px;border-radius:50%;background:${s.color};color:#fff;border:2px solid #fff;box-shadow:0 1px 4px #0008;display:flex;align-items:center;justify-content:center;font:800 9px Arial">${s.icon}</div>`,iconSize:[30,30],iconAnchor:[15,15]})
+}
+function renderAdvancedIncident(){
+ initAdvancedMap();advancedIncidentLayers.forEach(x=>advancedMap.removeLayer(x));advancedIncidentLayers=[];
+ if(!current)return;
+ const iso=L.circle([current.lat,current.lon],{radius:current.isolation_m,color:'#c62828',weight:3,fillColor:'#ef5350',fillOpacity:.25}).addTo(advancedMap);
+ const protect=L.polygon(sectorLatLngs(current),{color:'#f9a825',weight:3,fillColor:'#fdd835',fillOpacity:.22}).addTo(advancedMap);
+ const point=L.marker([current.lat,current.lon]).addTo(advancedMap).bindPopup(`<b>${escapeHtml(current.title)}</b><br>UN ${current.un} — ${escapeHtml(current.name)}`);
+ advancedIncidentLayers=[iso,protect,point];
+ advancedMap.fitBounds(L.featureGroup([iso,protect]).getBounds().pad(.1))
+}
+function selectedPOITypes(){return [...document.querySelectorAll('[data-poi-layer]:checked')].map(x=>x.dataset.poiLayer)}
+function overpassFragments(types,r,lat,lon){
+ const around=`(around:${r},${lat},${lon})`,q=[];
+ if(types.includes('hospitals'))q.push(`nwr${around}["amenity"~"hospital|clinic|doctors"];`);
+ if(types.includes('schools'))q.push(`nwr${around}["amenity"~"school|kindergarten|college|university"];`);
+ if(types.includes('firestations'))q.push(`nwr${around}["amenity"="fire_station"];`);
+ if(types.includes('hydrants'))q.push(`node${around}["emergency"="fire_hydrant"];`);
+ if(types.includes('waterways'))q.push(`way${around}["waterway"];nwr${around}["natural"="water"];`);
+ if(types.includes('industrial'))q.push(`nwr${around}["landuse"="industrial"];nwr${around}["industrial"];`);
+ if(types.includes('care'))q.push(`nwr${around}["amenity"~"nursing_home|social_facility"]["social_facility"~"nursing_home|assisted_living|group_home"];`);
+ if(types.includes('police'))q.push(`nwr${around}["amenity"="police"];`);
+ if(types.includes('shelters'))q.push(`nwr${around}["amenity"~"community_centre|shelter"];`);
+ return q.join('')
+}
+function buildOverpassQuery(){
+ const lat=current?.lat??+$('lat').value,lon=current?.lon??+$('lon').value,r=+$('poiRadius').value||5000;
+ return `[out:json][timeout:35];(${overpassFragments(selectedPOITypes(),r,lat,lon)});out center tags;`
+}
+function classifyPOI(tags={}){
+ if(tags.emergency==='fire_hydrant')return'hydrants';
+ if(tags.amenity==='fire_station')return'firestations';
+ if(['hospital','clinic','doctors'].includes(tags.amenity))return'hospitals';
+ if(['school','kindergarten','college','university'].includes(tags.amenity))return'schools';
+ if(tags.amenity==='police')return'police';
+ if(['community_centre','shelter'].includes(tags.amenity))return'shelters';
+ if(tags.amenity==='nursing_home'||tags.social_facility)return'care';
+ if(tags.waterway||tags.natural==='water')return'waterways';
+ if(tags.landuse==='industrial'||tags.industrial!==undefined)return'industrial';
+ return'other'
+}
+function poiName(tags,type,id){
+ return tags.name||tags['name:es']||tags.operator||`${POI_STYLE[type]?.label||'Elemento'} ${id}`
+}
+function haversine(lat1,lon1,lat2,lon2){
+ const R=6371000,p1=lat1*Math.PI/180,p2=lat2*Math.PI/180,dp=(lat2-lat1)*Math.PI/180,dl=(lon2-lon1)*Math.PI/180;
+ const a=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+}
+function pointInPolygon(point,poly){
+ const x=point[1],y=point[0];let inside=false;
+ for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+  const xi=poly[i][1],yi=poly[i][0],xj=poly[j][1],yj=poly[j][0];
+  const intersect=((yi>y)!=(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi+1e-12)+xi);
+  if(intersect)inside=!inside
+ }
+ return inside
+}
+async function queryPOI(){
+ if(!current)return setPOIStatus('Primero cree o abra un incidente.','error');
+ const types=selectedPOITypes();if(!types.length)return setPOIStatus('Seleccione al menos una capa.','warn');
+ setPOIStatus('Consultando OpenStreetMap mediante Overpass…','warn');
+ try{
+  const response=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(buildOverpassQuery())});
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const data=await response.json(),limit=+$('poiLimit').value||400,poly=sectorLatLngs(current);
+  const seen=new Set();poiResults=[];
+  for(const el of data.elements||[]){
+   const lat=el.lat??el.center?.lat,lon=el.lon??el.center?.lon;if(!Number.isFinite(lat)||!Number.isFinite(lon))continue;
+   const type=classifyPOI(el.tags||{});if(type==='other'||!types.includes(type))continue;
+   const key=`${type}:${Math.round(lat*1e5)}:${Math.round(lon*1e5)}`;if(seen.has(key))continue;seen.add(key);
+   const distance=haversine(current.lat,current.lon,lat,lon),affected=pointInPolygon([lat,lon],poly);
+   poiResults.push({id:`${el.type}/${el.id}`,type,name:poiName(el.tags||{},type,el.id),lat,lon,distance_m:distance,affected,tags:el.tags||{}})
+   if(poiResults.length>=limit)break
+  }
+  poiResults.sort((a,b)=>a.distance_m-b.distance_m);
+  renderPOI();setPOIStatus(`Consulta completada: ${poiResults.length} elementos encontrados.`,'ok')
+ }catch(error){console.error(error);setPOIStatus(`No fue posible consultar Overpass: ${error.message}`,'error')}
+}
+function setPOIStatus(text,type='warn'){const e=$('poiStatus');e.textContent=text;e.className=`query-status query-${type}`}
+function renderPOI(){
+ initAdvancedMap();poiLayers.forEach(x=>advancedMap.removeLayer(x));poiLayers=[];
+ poiResults.forEach(p=>{
+  const marker=L.marker([p.lat,p.lon],{icon:advancedIcon(p.type)}).addTo(advancedMap)
+   .bindPopup(`<b>${escapeHtml(p.name)}</b><br>${escapeHtml(POI_STYLE[p.type]?.label||p.type)}<br>${formatDistance(p.distance_m)}${p.affected?'<br><b>Dentro de acción protectora</b>':''}`);
+  poiLayers.push(marker)
+ });
+ $('poiTotal').textContent=poiResults.length;
+ $('poiAffected').textContent=poiResults.filter(x=>x.affected).length;
+ $('poiSensitive').textContent=poiResults.filter(x=>['hospitals','schools','care'].includes(x.type)).length;
+ $('poiHydrants').textContent=poiResults.filter(x=>x.type==='hydrants').length;
+ renderPOIList()
+}
+function formatDistance(d){return d<1000?`${Math.round(d)} m`:`${(d/1000).toFixed(2)} km`}
+function renderPOIList(){
+ const filter=$('poiListFilter').value,sort=$('poiSort').value;let rows=poiResults.filter(x=>!filter||(filter==='affected'?x.affected:x.type===filter));
+ rows=[...rows].sort(sort==='name'?(a,b)=>a.name.localeCompare(b.name,'es'):sort==='type'?(a,b)=>a.type.localeCompare(b.type):((a,b)=>a.distance_m-b.distance_m));
+ $('poiList').innerHTML=rows.slice(0,300).map(p=>`<div class="poi-card ${p.affected?'affected':''}">
+ <div class="title">${escapeHtml(p.name)}</div>
+ <div class="meta">${escapeHtml(POI_STYLE[p.type]?.label||p.type)} · ${formatDistance(p.distance_m)}${p.affected?' · DENTRO DE ACCIÓN PROTECTORA':''}<br>${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}</div>
+ <div class="library-actions"><button class="secondary" onclick="focusPOI('${p.id}')">Ver en mapa</button><button class="secondary" onclick="addPOIToTactical('${p.id}')">Agregar a táctico</button></div>
+ </div>`).join('')||'<p class="small">Sin resultados para el filtro seleccionado.</p>'
+}
+$('poiListFilter').onchange=renderPOIList;$('poiSort').onchange=renderPOIList;
+window.focusPOI=id=>{const p=poiResults.find(x=>x.id===id);if(p){advancedMap.setView([p.lat,p.lon],17)}};
+window.addPOIToTactical=id=>{const p=poiResults.find(x=>x.id===id);if(!p)return;tacticalMarkers.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),type:'sensitive',name:p.name,lat:p.lat,lon:p.lon,status:'Activo'});localStorage.setItem(tacticalKey(),JSON.stringify(collectTactical()));alert('Receptor agregado al módulo Táctico')};
+$('queryPOI').onclick=queryPOI;
+$('clearPOI').onclick=()=>{poiLayers.forEach(x=>advancedMap&&advancedMap.removeLayer(x));poiLayers=[];poiResults=[];renderPOI();setPOIStatus('Capas limpiadas.','warn')};
+$('fitPOI').onclick=()=>{const layers=[...advancedIncidentLayers,...poiLayers];if(layers.length)advancedMap.fitBounds(L.featureGroup(layers).getBounds().pad(.1))};
+
+function poiGeoJSON(){return{type:'FeatureCollection',features:poiResults.map(p=>({type:'Feature',properties:{id:p.id,type:p.type,name:p.name,distance_m:Math.round(p.distance_m),affected:p.affected,...p.tags},geometry:{type:'Point',coordinates:[p.lon,p.lat]}}))}}
+$('exportPOIGeoJSON').onclick=()=>download(`Receptores_${safeName(current?.title||'Incidente')}.geojson`,JSON.stringify(poiGeoJSON(),null,2),'application/geo+json');
+$('exportPOICSV').onclick=()=>{const rows=[['tipo','nombre','distancia_m','dentro_accion_protectora','latitud','longitud'],...poiResults.map(p=>[p.type,p.name,Math.round(p.distance_m),p.affected?'SI':'NO',p.lat,p.lon])];const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');download(`Receptores_${safeName(current?.title||'Incidente')}.csv`,csv,'text/csv')};
+$('exportPOIKML').onclick=()=>{if(!current)return alert('No hay incidente activo');const placemarks=poiResults.map(p=>`<Placemark><name>${escapeHtml(p.name)}</name><description>${escapeHtml(POI_STYLE[p.type]?.label||p.type)} | ${formatDistance(p.distance_m)} | ${p.affected?'Dentro de acción protectora':'Fuera de acción protectora'}</description><Point><coordinates>${p.lon},${p.lat},0</coordinates></Point></Placemark>`).join('');const k=toKML(current).replace('</Document></kml>',placemarks+'</Document></kml>');download(`UN${current.un}_${safeName(current.title)}_RECEPTORES.kml`,k,'application/vnd.google-earth.kml+xml')};

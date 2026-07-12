@@ -1,9 +1,9 @@
 # CHANGELOG
 
-## v1.0 — Sprint 7
-- Meteorología automática por coordenadas.
-- Integración Open-Meteo.
-- Condiciones actuales y pronóstico horario.
-- Jerarquía de fuentes meteorológicas.
-- Aplicación automática al mapa.
-- Persistencia y exportación del registro.
+## v1.1 — Sprint 8
+- Mapa táctico avanzado.
+- Consulta Overpass/OpenStreetMap.
+- Capas de hospitales, escuelas, bomberos, hidrantes, agua e industria.
+- Detección de receptores dentro de la acción protectora.
+- Filtros, listado y distancias.
+- Exportaciones GeoJSON, CSV y KML.
