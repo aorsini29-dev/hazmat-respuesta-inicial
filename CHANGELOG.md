@@ -1,9 +1,12 @@
 # CHANGELOG
 
-## v0.8
-- Biblioteca GRE completa de identificación.
-- 1979 números ONU.
-- 2953 denominaciones y alias.
-- Búsqueda y filtros avanzados.
-- Navegación desde biblioteca hacia incidente y EPP.
-- Nuevo archivo offline `gre-full-catalog.js`.
+## v0.9 — Sprint 6
+- Módulo de fichas técnicas enriquecidas.
+- Base modular JSON.
+- NFPA 704 gráfico.
+- Pictogramas GHS.
+- Incompatibilidades.
+- Extinción y productos de combustión.
+- Primeros auxilios.
+- Estado de validación y trazabilidad.
+- Integración con Biblioteca GRE.

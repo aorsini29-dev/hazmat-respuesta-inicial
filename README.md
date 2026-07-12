@@ -1,18 +1,32 @@
-# HazMat Respuesta Inicial v0.8 — Biblioteca GRE 2024
+# HazMat Respuesta Inicial v0.9 — Sprint 6
 
-## Biblioteca incorporada
-- 1.979 números ONU únicos.
-- 2.953 denominaciones y alias extraídos de los índices amarillo y azul.
-- Búsqueda por número ONU. nombre. alias y guía.
-- Filtros por Tabla 1. Tabla 3. selector EPP y guía con sufijo P.
-- Acceso directo desde la biblioteca al formulario del incidente.
-- Acceso directo al selector EPP para sustancias parametrizadas.
-- Funcionamiento local y sin conexión después de la primera carga.
+## Nuevo módulo: Ficha técnica enriquecida
+Incluye una arquitectura modular y una base inicial con 15 sustancias frecuentes.
 
-## Alcance
-La biblioteca estructura la identificación de las sustancias detalladas en los índices de la GRE 2024.
-Las instrucciones completas de las guías naranjas. tablas. carteles y textos extensos permanecen como consulta de la publicación original.
+### Contenido
+- Estado físico y comportamiento.
+- Riesgos principales.
+- NFPA 704 representado gráficamente.
+- Pictogramas GHS.
+- Incompatibilidades.
+- Agentes y estrategia de extinción.
+- Productos de combustión/descomposición.
+- Primeros auxilios iniciales.
+- EPP preliminar.
+- Observaciones operativas.
+- Estado y fecha de validación.
+
+### Estados de calidad
+- Validada: revisión técnica inicial completada.
+- Parcial: requiere verificación adicional antes de adopción institucional.
+- Pendiente: estructura disponible, datos aún no revisados.
+
+### Sustancias iniciales
+UN1005, UN1017, UN1040, UN1050, UN1052, UN1079, UN1090, UN1170, UN1203, UN1219, UN1230, UN1789, UN1824, UN1830 y UN2031.
+
+## Archivos de datos
+- `technical-data.js`: consumo offline por la PWA.
+- `data/substances-enriched.json`: base portable y auditable.
 
 ## Actualización
-Reemplace todos los archivos del repositorio. incluido `gre-full-catalog.js`. y haga commit.
-Luego cierre y vuelva a abrir la PWA. Si aparece una versión anterior. reinstale la aplicación.
+Reemplace todos los archivos del repositorio y haga commit. Asegúrese de publicar también la carpeta `data`.

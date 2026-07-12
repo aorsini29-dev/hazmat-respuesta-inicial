@@ -120,6 +120,24 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
 .library-actions button{padding:8px 10px;font-size:.77rem}
 @media(max-width:760px){.library-toolbar{grid-template-columns:1fr}}
 
+
+.tech-head{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.validation{display:inline-block;padding:5px 9px;border-radius:999px;font-size:.72rem;font-weight:900}
+.validation.validada{background:#e8f5e9;color:#1b5e20}.validation.parcial{background:#fff3e0;color:#e65100}.validation.pendiente{background:#eceff1;color:#455a64}
+.nfpa-wrap{display:grid;grid-template-columns:140px 1fr;gap:15px;align-items:center}
+.nfpa-diamond{position:relative;width:116px;height:116px;transform:rotate(45deg);margin:18px auto}
+.nfpa-cell{position:absolute;width:56px;height:56px;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.25rem;color:#fff}
+.nfpa-cell span{transform:rotate(-45deg)}
+.nfpa-health{left:0;top:29px;background:#1565c0}.nfpa-fire{left:29px;top:0;background:#d32f2f}.nfpa-react{right:0;top:29px;background:#fdd835;color:#111}.nfpa-special{left:29px;bottom:0;background:#fff;color:#111;border-color:#bbb;font-size:.8rem}
+.ghs-row{display:flex;gap:8px;flex-wrap:wrap}.ghs-icon{width:65px;height:65px;transform:rotate(45deg);border:3px solid #d32f2f;background:#fff;display:flex;align-items:center;justify-content:center;margin:8px}
+.ghs-icon span{transform:rotate(-45deg);font-size:.65rem;font-weight:900;text-align:center;color:#111}
+.tech-section{border:1px solid #dce3ea;border-radius:12px;padding:11px;margin-top:10px;background:#fbfcfd}
+.tech-section h3{font-size:.88rem;margin:0 0 7px}.tech-section ul{margin:0;padding-left:20px;font-size:.82rem;line-height:1.4}
+.tech-empty{text-align:center;padding:25px;color:#66717c}
+.tech-toolbar{display:grid;grid-template-columns:2fr 1fr auto;gap:8px}
+.source-note{font-size:.72rem;color:#66717c;line-height:1.4}
+@media(max-width:700px){.tech-toolbar,.tech-head,.nfpa-wrap{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -128,7 +146,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
   <button id="menuBtn" class="menu-btn" aria-label="Abrir menú">☰</button>
   <div class="header-title">
     <h1>HazMat Respuesta Inicial</h1>
-    <div class="sub">v0.8 · Biblioteca completa GRE 2024</div>
+    <div class="sub">v0.9 · Fichas técnicas enriquecidas</div>
   </div>
   <div id="statusBar" class="status-strip">Sin incidente activo</div>
 </header>
@@ -146,6 +164,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
     <button class="tab" data-view="operations">🚒 Operaciones</button>
 <button class="tab" data-view="ppe">🧤 Selector de EPP</button>
 <button class="tab" data-view="library">📚 Biblioteca GRE</button>
+<button class="tab" data-view="technical">🧪 Ficha técnica</button>
     <button class="tab" data-view="tactical">📍 Táctico</button>
     <button class="tab" data-view="tools">🧮 Herramientas</button>
     <button class="tab" data-view="reports">📄 Reportes</button>
@@ -496,6 +515,33 @@ La biblioteca permite identificar sustancias por número ONU, denominación o al
 </div>
 </section>
 
+
+<section id="technical" class="view">
+<div class="card">
+<h2>Ficha técnica enriquecida</h2>
+<div class="warning">
+Las fichas complementan la identificación GRE. Deben verificarse contra la SDS vigente, documentación del fabricante, instrumentos de campo y procedimientos de la autoridad competente. Los datos con estado “Parcial” requieren revisión antes de uso institucional.
+</div>
+<div class="tech-toolbar" style="margin-top:10px">
+<input id="techSearch" placeholder="Buscar por ONU o nombre">
+<select id="techSelect"></select>
+<button class="primary" id="openTechnical">Abrir ficha</button>
+</div>
+</div>
+<div id="technicalContent" class="card">
+<div class="tech-empty">Seleccione una sustancia con ficha enriquecida.</div>
+</div>
+<div class="card">
+<h2>Gestión y trazabilidad</h2>
+<div class="actions3">
+<button class="secondary" id="exportTechnical">Exportar ficha JSON</button>
+<button class="secondary" id="copyTechnical">Copiar resumen</button>
+<button class="secondary" id="exportTechnicalDB">Exportar base enriquecida</button>
+</div>
+<p class="source-note">La base registra versión, fecha de revisión y estado de validación. La aplicación no reemplaza una SDS ni una tabla de compatibilidad del fabricante.</p>
+</div>
+</section>
+
 <section id="tactical" class="view">
 <div class="card">
 <h2>Motor táctico</h2>
@@ -624,6 +670,7 @@ La biblioteca permite identificar sustancias por número ONU, denominación o al
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="gre-data.js"></script>
 <script src="gre-full-catalog.js"></script>
+<script src="technical-data.js"></script>
 <script src="app.js"></script>
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js')}</script>
 </body></html>

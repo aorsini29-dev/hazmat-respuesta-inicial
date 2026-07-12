@@ -16,7 +16,7 @@ function showView(id){
  if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current){renderMap();renderTacticalMarkers();applyTacticalZones(false)}},100);
  if(id==='history')renderHistory();
  if(id==='ics')loadICSView();
- if(id==='operations')loadOperations();if(id==='ppe')loadPPE();if(id==='library')loadLibrary();
+ if(id==='operations')loadOperations();if(id==='ppe')loadPPE();if(id==='library')loadLibrary();if(id==='technical')loadTechnical();
  if(id==='reports')buildReport();
  if(id==='tactical')loadTactical();
 }
@@ -753,7 +753,7 @@ function renderLibrary(){
       <div class="aliases"><strong>Denominaciones:</strong><br>${aliases.map(escapeHtml).join('<br>')}${more>0?`<br><em>+ ${more} alias adicionales</em>`:''}</div>
       <div class="library-actions">
         <button class="primary" onclick="selectLibraryUN('${x.un}')">Usar en incidente</button>
-        ${x.ppe?`<button class="secondary" onclick="selectLibraryPPE('${x.un}')">Evaluar EPP</button>`:''}
+        ${TECH_DB[x.un]?`<button class="secondary" onclick="openTechnicalFromLibrary('${x.un}')">Ficha técnica</button>`:''}${x.ppe?`<button class="secondary" onclick="selectLibraryPPE('${x.un}')">Evaluar EPP</button>`:''}
       </div>
     </div>`
   }).join('')+(rows.length>400?`<div class="warning">Se muestran los primeros 400 resultados. Refine la búsqueda para ver registros específicos.</div>`:'');
@@ -772,4 +772,86 @@ window.selectLibraryPPE=un=>{
   current=current||{id:'library-'+un,title:`UN ${un}`,un,name:rec.names[0]||'',guide:rec.guides[0]||'',lat:+$('lat').value,lon:+$('lon').value,bearing:+$('bearing').value,isolation_m:0,protective_km:0,source:'Biblioteca GRE 2024'};
   current.un=un;current.name=rec.names[0]||current.name;current.guide=rec.guides[0]||current.guide;
   showView('ppe');loadPPE()
+};
+
+
+// ---------------- v0.9: Fichas técnicas enriquecidas ----------------
+const TECH_DB=window.HAZMAT_TECHNICAL||{};
+let activeTechnicalUN=null;
+
+const GHS_LABELS={
+ GHS01:"Explosivo",GHS02:"Inflamable",GHS03:"Oxidante",GHS04:"Gas a presión",
+ GHS05:"Corrosivo",GHS06:"Toxicidad aguda",GHS07:"Irritante",GHS08:"Peligro crónico",GHS09:"Ambiente"
+};
+function technicalOptions(query=''){
+ const q=normalizedText(query);
+ return Object.entries(TECH_DB).filter(([un,r])=>!q||normalizedText(un+' '+r.name).includes(q))
+   .sort((a,b)=>a[0].localeCompare(b[0]));
+}
+function fillTechnicalSelect(query=''){
+ const rows=technicalOptions(query);
+ $('techSelect').innerHTML=rows.map(([un,r])=>`<option value="${un}">UN ${un} — ${escapeHtml(r.name)}</option>`).join('');
+ if(!rows.length)$('techSelect').innerHTML='<option value="">Sin coincidencias</option>'
+}
+function loadTechnical(){
+ if(!$('techSelect').options.length)fillTechnicalSelect(current?.un||'');
+ if(current?.un&&TECH_DB[current.un]){
+   $('techSearch').value=current.un;fillTechnicalSelect(current.un);$('techSelect').value=current.un;renderTechnical(current.un)
+ }
+}
+$('techSearch').addEventListener('input',e=>fillTechnicalSelect(e.target.value));
+$('openTechnical').onclick=()=>renderTechnical($('techSelect').value);
+
+function listHtml(items){
+ return items?.length?`<ul>${items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>`:'<p class="small">Sin datos estructurados.</p>'
+}
+function renderTechnical(un){
+ const r=TECH_DB[un];activeTechnicalUN=un;
+ if(!r){$('technicalContent').innerHTML='<div class="tech-empty">No hay ficha enriquecida para esta sustancia.</div>';return}
+ $('technicalContent').innerHTML=`
+ <div class="tech-head">
+   <div><h2>UN ${un} — ${escapeHtml(r.name)}</h2><div class="small">Revisión: ${escapeHtml(r.reviewed||'No informada')}</div></div>
+   <span class="validation ${escapeHtml(r.validation)}">${escapeHtml(r.validation.toUpperCase())}</span>
+ </div>
+ <div class="tech-section"><h3>Estado físico y comportamiento</h3><p>${escapeHtml(r.physical)}</p></div>
+ <div class="nfpa-wrap">
+   <div class="nfpa-diamond">
+    <div class="nfpa-cell nfpa-health"><span>${r.nfpa.health}</span></div>
+    <div class="nfpa-cell nfpa-fire"><span>${r.nfpa.fire}</span></div>
+    <div class="nfpa-cell nfpa-react"><span>${r.nfpa.reactivity}</span></div>
+    <div class="nfpa-cell nfpa-special"><span>${escapeHtml(r.nfpa.special||'')}</span></div>
+   </div>
+   <div><h3>NFPA 704</h3><p class="small">Salud ${r.nfpa.health} · Inflamabilidad ${r.nfpa.fire} · Inestabilidad ${r.nfpa.reactivity}${r.nfpa.special?' · Especial '+escapeHtml(r.nfpa.special):''}</p></div>
+ </div>
+ <div class="tech-section"><h3>Pictogramas GHS</h3><div class="ghs-row">${r.ghs.map(g=>`<div class="ghs-icon" title="${escapeHtml(GHS_LABELS[g]||g)}"><span>${escapeHtml(g)}<br>${escapeHtml(GHS_LABELS[g]||'')}</span></div>`).join('')}</div></div>
+ <div class="tech-section"><h3>Riesgos principales</h3>${listHtml(r.hazards)}</div>
+ <div class="tech-section"><h3>Incompatibilidades</h3>${listHtml(r.incompatibilities)}</div>
+ <div class="tech-section"><h3>Agentes y estrategia de extinción</h3>${listHtml(r.extinguishing)}</div>
+ <div class="tech-section"><h3>Productos peligrosos de combustión o descomposición</h3>${listHtml(r.combustion)}</div>
+ <div class="tech-section"><h3>Primeros auxilios iniciales</h3>${listHtml(r.firstAid)}</div>
+ <div class="tech-section"><h3>EPP preliminar</h3><p>${escapeHtml(r.ppe)}</p></div>
+ <div class="tech-section"><h3>Observaciones operativas</h3>${listHtml(r.notes)}</div>
+ <p class="source-note">Estado de validación: ${escapeHtml(r.validation)}. Confirmar siempre con SDS, fabricante y evaluación del incidente.</p>`
+}
+window.openTechnicalFromLibrary=un=>{
+ showView('technical');$('techSearch').value=un;fillTechnicalSelect(un);$('techSelect').value=un;renderTechnical(un)
+};
+$('exportTechnical').onclick=()=>{
+ if(!activeTechnicalUN||!TECH_DB[activeTechnicalUN])return alert('Seleccione una ficha');
+ download(`Ficha_UN${activeTechnicalUN}_${safeName(TECH_DB[activeTechnicalUN].name)}.json`,
+ JSON.stringify({un:activeTechnicalUN,...TECH_DB[activeTechnicalUN]},null,2),'application/json')
+};
+$('exportTechnicalDB').onclick=()=>download('HazMat_base_enriquecida_v0.9.json',
+ JSON.stringify({version:'0.9.0',updated:'2026-07-12',records:TECH_DB},null,2),'application/json');
+$('copyTechnical').onclick=async()=>{
+ if(!activeTechnicalUN||!TECH_DB[activeTechnicalUN])return alert('Seleccione una ficha');
+ const r=TECH_DB[activeTechnicalUN];
+ const text=`UN ${activeTechnicalUN} — ${r.name}
+Validación: ${r.validation}
+NFPA 704: Salud ${r.nfpa.health}, Inflamabilidad ${r.nfpa.fire}, Inestabilidad ${r.nfpa.reactivity}, Especial ${r.nfpa.special||'-'}
+Riesgos: ${r.hazards.join(' | ')}
+Incompatibilidades: ${r.incompatibilities.join(' | ')}
+Extinción: ${r.extinguishing.join(' | ')}
+EPP: ${r.ppe}`;
+ try{await navigator.clipboard.writeText(text);alert('Ficha copiada')}catch{alert(text)}
 };

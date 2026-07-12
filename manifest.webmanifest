@@ -1,11 +1,11 @@
 {
-  "name": "HazMat Respuesta Inicial v0.8",
+  "name": "HazMat Respuesta Inicial v0.9",
   "short_name": "HazMat RI",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eef2f6",
   "theme_color": "#9f1d16",
-  "description": "Biblioteca ampliada GRE 2024, búsqueda por ONU y alias, SCI, mapa y selector EPP.",
+  "description": "Fichas técnicas enriquecidas, GRE 2024, NFPA 704, GHS, incompatibilidades y EPP.",
   "icons": [
     {
       "src": "icon-192.svg",
