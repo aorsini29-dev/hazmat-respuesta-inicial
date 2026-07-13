@@ -16,7 +16,7 @@ function showView(id){
  if(id==='mapview')setTimeout(()=>{initMap();map.invalidateSize();if(current){renderMap();renderTacticalMarkers();applyTacticalZones(false)}},100);if(id==='advancedmap')setTimeout(()=>{initAdvancedMap();advancedMap.invalidateSize();renderAdvancedIncident()},120);
  if(id==='history')renderHistory();
  if(id==='ics')loadICSView();
- if(id==='operations')loadOperations();if(id==='ppe')loadPPE();if(id==='library')loadLibrary();if(id==='technical')loadTechnical();if(id==='weather')loadWeatherModule();
+ if(id==='operations')loadOperations();if(id==='ppe')loadPPE();if(id==='library')loadLibrary();if(id==='technical')loadTechnical();if(id==='weather')loadWeatherModule();if(id==='wind')loadWindManager();
  if(id==='reports')buildReport();
  if(id==='tactical')loadTactical();
 }
@@ -50,7 +50,7 @@ function updateScenarioControls(){
    $('container').innerHTML=Object.entries(T3[r.un].containers).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')
  }
 }
-$('windPreset').onchange=e=>{if(e.target.value!=='')$('bearing').value=e.target.value};
+
 $('gps').onclick=()=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{$('lat').value=p.coords.latitude.toFixed(7);$('lon').value=p.coords.longitude.toFixed(7);if(map)map.setView([p.coords.latitude,p.coords.longitude],15)},e=>alert('No fue posible obtener el GPS: '+e.message),{enableHighAccuracy:true}):alert('GPS no disponible');
 $('compass').onclick=async()=>{try{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){let r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')throw new Error('Permiso denegado')}const h=e=>{let a=e.webkitCompassHeading??(360-e.alpha);if(Number.isFinite(a)){$('bearing').value=Math.round(a);window.removeEventListener('deviceorientation',h);alert('Rumbo cargado: '+Math.round(a)+'°')}};window.addEventListener('deviceorientation',h,true);setTimeout(()=>window.removeEventListener('deviceorientation',h),8000)}catch(e){alert('No fue posible usar la brújula: '+e.message)}};
 $('calc').onclick=calculate;
@@ -469,7 +469,7 @@ $('exportCombinedKML').onclick=()=>{
 function updateGlobalStatus(){
  const el=document.getElementById('statusBar');if(!el)return;
  if(!current){el.textContent='Sin incidente activo';return}
- const wx=activeWeather||getTactical()?.weather;
+ const wx=windState?.active?{windDirection:windState.active.direction,windSpeed:windState.active.speed}:activeWeather||getTactical()?.weather;
  const wxDir=wx?.windDirection??wx?.windDir??current.bearing;const wxSpd=wx?.windSpeed;const windTxt=wx?`${Math.round(wxDir)}° · ${wxSpd??'-'} km/h`:`${Math.round(current.bearing)}°`;
  el.textContent=`UN ${current.un} | ${current.name} | Viento ${windTxt} | Aislamiento ${current.isolation_m} m | Acción protectora ${current.protective_km} km`;
 }
@@ -1174,3 +1174,34 @@ function poiGeoJSON(){return{type:'FeatureCollection',features:poiResults.map(p=
 $('exportPOIGeoJSON').onclick=()=>download(`Receptores_${safeName(current?.title||'Incidente')}.geojson`,JSON.stringify(poiGeoJSON(),null,2),'application/geo+json');
 $('exportPOICSV').onclick=()=>{const rows=[['tipo','nombre','distancia_m','dentro_accion_protectora','latitud','longitud'],...poiResults.map(p=>[p.type,p.name,Math.round(p.distance_m),p.affected?'SI':'NO',p.lat,p.lon])];const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');download(`Receptores_${safeName(current?.title||'Incidente')}.csv`,csv,'text/csv')};
 $('exportPOIKML').onclick=()=>{if(!current)return alert('No hay incidente activo');const placemarks=poiResults.map(p=>`<Placemark><name>${escapeHtml(p.name)}</name><description>${escapeHtml(POI_STYLE[p.type]?.label||p.type)} | ${formatDistance(p.distance_m)} | ${p.affected?'Dentro de acción protectora':'Fuera de acción protectora'}</description><Point><coordinates>${p.lon},${p.lat},0</coordinates></Point></Placemark>`).join('');const k=toKML(current).replace('</Document></kml>',placemarks+'</Document></kml>');download(`UN${current.un}_${safeName(current.title)}_RECEPTORES.kml`,k,'application/vnd.google-earth.kml+xml')};
+
+let windState={active:null,history:[]};
+function windKey(){return current?`hazmatWIND:${current.id}`:'hazmatWIND:draft'}
+function loadWindSaved(){try{return JSON.parse(localStorage.getItem(windKey())||'null')}catch{return null}}
+function loadWindManager(){
+ const saved=loadWindSaved();if(saved)windState=saved;
+ if(remoteWeather){$('windRemoteDir').textContent=`${Math.round(remoteWeather.windDirection)}° ${cardinal(remoteWeather.windDirection)}`;$('windRemoteMeta').textContent=`${fmt(remoteWeather.windSpeed,' km/h')} · ráfaga ${fmt(remoteWeather.windGust,' km/h')}`}
+ if(windState.active)renderWindActive();renderWindForecast();renderWindHistory()
+}
+function setActiveWind(r){
+ const prev=windState.active;windState.active=r;windState.history.unshift({...r,changedAt:new Date().toISOString()});windState.history=windState.history.slice(0,100);
+ activeWeather={source:r.source,windDirection:r.direction,windSpeed:r.speed,windGust:r.gust,observedAt:r.observedAt};
+ if(prev&&Math.abs((((r.direction-prev.direction)+540)%360)-180)>=15){$('windChangeAlert').style.display='block';$('windChangeAlert').textContent=`Cambio significativo: ${Math.round(prev.direction)}° → ${Math.round(r.direction)}°. Verifique la zona protectora.`}
+ renderWindActive();renderWindHistory();updateGlobalStatus()
+}
+function renderWindActive(){
+ const a=windState.active;if(!a)return;$('windActiveDir').textContent=`${Math.round(a.direction)}° ${cardinal(a.direction)}`;$('windActiveText').textContent=`${a.source} · ${fmt(a.speed,' km/h')}${Number.isFinite(+a.gust)?' · ráfaga '+fmt(a.gust,' km/h'):''}`;$('windActiveTime').textContent=new Date(a.observedAt).toLocaleString();$('windNeedle').style.transform=`translate(-50%,-100%) rotate(${a.direction}deg)`;$('windSourceDisplay').value=a.source
+}
+$('useLocalWind').onclick=()=>{const d=+$('windLocalDir').value,s=+$('windLocalSpeed').value;if(!Number.isFinite(d)||!Number.isFinite(s))return alert('Complete dirección y velocidad');setActiveWind({source:'Medición local',direction:(d+360)%360,speed:s,gust:+$('windLocalGust').value||null,instrument:$('windLocalInstrument').value,observedAt:new Date().toISOString()})};
+$('useRemoteWind').onclick=()=>{if(!remoteWeather)return alert('Obtenga datos automáticos');setActiveWind({source:'Open-Meteo',direction:remoteWeather.windDirection,speed:remoteWeather.windSpeed,gust:remoteWeather.windGust,observedAt:remoteWeather.observedAt})};
+$('useManualWind').onclick=()=>{const d=+$('windManualDir').value,s=+$('windManualSpeed').value;if(!Number.isFinite(d)||!Number.isFinite(s))return alert('Complete dirección y velocidad');setActiveWind({source:'Ingreso manual',direction:(d+360)%360,speed:s,gust:+$('windManualGust').value||null,note:$('windManualNote').value,observedAt:new Date().toISOString()})};
+document.querySelectorAll('[data-wind-adjust]').forEach(b=>b.onclick=()=>{if(!windState.active)return alert('Seleccione una fuente');const delta=+b.dataset.windAdjust,a=windState.active;setActiveWind({...a,source:'Corrección manual',direction:(a.direction+delta+360)%360,observedAt:new Date().toISOString(),note:`Ajuste ${delta}°`})});
+$('applyWindToMap').onclick=()=>{if(!windState.active)return alert('Seleccione una fuente');if(current){current.bearing=windState.active.direction;current.windRecord=windState.active;$('bearing').value=current.bearing;if(map)renderMap();if(advancedMap)renderAdvancedIncident()}updateGlobalStatus();alert('Viento aplicado')};
+$('saveWindState').onclick=()=>{localStorage.setItem(windKey(),JSON.stringify(windState));alert('Viento guardado')};
+function renderWindHistory(){$('windHistory').innerHTML=(windState.history||[]).map(x=>`<div class="wind-history-item"><strong>${Math.round(x.direction)}° ${cardinal(x.direction)} · ${escapeHtml(x.source)}</strong><br>${fmt(x.speed,' km/h')}<br>${new Date(x.changedAt||x.observedAt).toLocaleString()}</div>`).join('')||'<div class="small">Sin registros.</div>'}
+function renderWindForecast(){
+ const h=remoteWeather?.hourly||[];if(!h.length){$('windForecast').innerHTML='<div class="small">Sin pronóstico disponible.</div>';return}
+ $('windForecast').innerHTML=h.slice(0,4).map((x,i)=>`<div class="box"><strong>${i===0?'Ahora':new Date(x.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong><br>${Math.round(x.windDirection)}° ${cardinal(x.windDirection)}<br>${fmt(x.windSpeed,' km/h')}</div>`).join('')
+}
+$('exportWindHistory').onclick=()=>download(`Viento_${safeName(current?.title||'Incidente')}.json`,JSON.stringify({active:windState.active,history:windState.history},null,2),'application/json');
+$('clearWindHistory').onclick=()=>{if(confirm('¿Limpiar historial?')){windState.history=[];renderWindHistory()}};

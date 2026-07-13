@@ -1,4 +1,4 @@
-const CACHE='hazmat-ri-v110';
+const CACHE='hazmat-ri-v120';
 const CORE=['./','./index.html','./app.js','./gre-data.js','./gre-full-catalog.js','./technical-data.js','./data/substances-enriched.json','./manifest.webmanifest','./icon-192.svg','./icon-512.svg'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)))});
 self.addEventListener('activate',e=>{e.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim()})())});

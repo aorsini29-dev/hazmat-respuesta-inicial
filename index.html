@@ -173,6 +173,8 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
 @media(max-width:760px){.layer-grid{grid-template-columns:1fr 1fr}.poi-summary{grid-template-columns:1fr 1fr}}
 @media(max-width:480px){.layer-grid,.poi-summary{grid-template-columns:1fr}}
 
+
+.wind-panel{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wind-card{border:1px solid #dce3ea;border-radius:14px;padding:13px;background:#fff}.wind-card.active{border:2px solid #2e7d32;background:#f1f8e9}.wind-value{font-size:2rem;font-weight:900}.wind-sub{font-size:.78rem;color:#66717c;margin-top:4px}.wind-controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.compass{position:relative;width:250px;height:250px;border-radius:50%;border:2px solid #cfd8dc;margin:15px auto;background:radial-gradient(circle,#fff 0 44%,#eef3f6 45%)}.compass .dir{position:absolute;font-weight:900}.compass .n{top:7px;left:50%;transform:translateX(-50%)}.compass .s{bottom:7px;left:50%;transform:translateX(-50%)}.compass .e{right:9px;top:50%;transform:translateY(-50%)}.compass .w{left:9px;top:50%;transform:translateY(-50%)}.compass-needle{position:absolute;left:50%;top:50%;width:6px;height:96px;background:#c62828;transform-origin:50% 100%;border-radius:6px 6px 0 0}.compass-center{position:absolute;left:50%;top:50%;width:18px;height:18px;border-radius:50%;background:#263238;transform:translate(-50%,-50%)}.wind-history{display:grid;gap:8px;max-height:38vh;overflow:auto}.wind-history-item{border:1px solid #dce3ea;border-radius:10px;padding:9px;background:#fff;font-size:.78rem}.wind-alert{padding:10px;border-radius:10px;background:#fff3e0;border-left:5px solid #ef6c00;font-size:.82rem}.wind-forecast{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.wind-forecast .box{border:1px solid #dce3ea;border-radius:10px;padding:9px;text-align:center;background:#fff}@media(max-width:760px){.wind-panel,.wind-forecast{grid-template-columns:1fr 1fr}}@media(max-width:480px){.wind-panel,.wind-forecast,.wind-controls{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -181,7 +183,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
   <button id="menuBtn" class="menu-btn" aria-label="Abrir menú">☰</button>
   <div class="header-title">
     <h1>HazMat Respuesta Inicial</h1>
-    <div class="sub">v1.1 · Mapa táctico avanzado</div>
+    <div class="sub">v1.2 · Gestión inteligente del viento</div>
   </div>
   <div id="statusBar" class="status-strip">Sin incidente activo</div>
 </header>
@@ -203,6 +205,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
 <button class="tab" data-view="technical">🧪 Ficha técnica</button>
     <button class="tab" data-view="tactical">📍 Táctico</button>
 <button class="tab" data-view="weather">🌦️ Meteorología</button>
+<button class="tab" data-view="wind">🌬️ Viento</button>
     <button class="tab" data-view="tools">🧮 Herramientas</button>
     <button class="tab" data-view="reports">📄 Reportes</button>
     <button class="tab" data-view="history">🗂️ Historial</button>
@@ -221,7 +224,7 @@ header h1{font-size:1.05rem;margin:0}.header-title{min-width:0}.sub{font-size:.7
 <div><label>Momento</label><select id="period"><option value="day">Día</option><option value="night">Noche</option></select></div>
 <div><label>Velocidad del viento</label><select id="wind"><option value="light">Leve (&lt;10 km/h)</option><option value="moderate">Moderado (10–20 km/h)</option><option value="strong">Fuerte (&gt;20 km/h)</option></select></div>
 <div><label>Viento DESDE (grados)</label><input id="bearing" type="number" min="0" max="359" value="90"></div>
-<div><label>Dirección rápida</label><select id="windPreset"><option value="90">Este → Oeste</option><option value="270">Oeste → Este</option><option value="0">Norte → Sur</option><option value="180">Sur → Norte</option><option value="">Personalizada</option></select></div>
+<div><label>Fuente del viento</label><input id="windSourceDisplay" readonly value="Manual"></div>
 <div><label>Latitud</label><input id="lat" type="number" step="any" value="-32.7446389"></div>
 <div><label>Longitud</label><input id="lon" type="number" step="any" value="-60.7318222"></div>
 <div><label>Nombre / referencia del incidente</label><input id="title" value="Incidente HazMat"></div>
@@ -827,6 +830,19 @@ Los datos remotos son estimaciones de modelos meteorológicos y no reemplazan un
 </div>
 </section>
 
+
+<section id="wind" class="view">
+<div class="card"><h2>Gestión inteligente del viento</h2><div class="warning">La aplicación usa una única fuente activa para orientar la zona protectora. Prioridad recomendada: medición local, ingreso manual verificado y meteorología remota.</div>
+<div class="wind-panel" style="margin-top:10px">
+<div class="wind-card" id="windCardLocal"><h3>Medición local</h3><div class="grid"><div><label>Dirección desde (°)</label><input id="windLocalDir" type="number" min="0" max="359"></div><div><label>Velocidad (km/h)</label><input id="windLocalSpeed" type="number" min="0" step="0.1"></div><div><label>Ráfaga</label><input id="windLocalGust" type="number" min="0" step="0.1"></div><div><label>Instrumento</label><input id="windLocalInstrument" placeholder="Anemómetro portátil"></div></div><button class="primary wide" id="useLocalWind" style="margin-top:8px">Usar medición local</button></div>
+<div class="wind-card" id="windCardRemote"><h3>Open-Meteo</h3><div class="wind-value" id="windRemoteDir">—</div><div class="wind-sub" id="windRemoteMeta">Sin datos remotos</div><button class="secondary wide" id="useRemoteWind" style="margin-top:8px">Usar Open-Meteo</button></div>
+<div class="wind-card" id="windCardManual"><h3>Ingreso manual</h3><div class="grid"><div><label>Dirección desde (°)</label><input id="windManualDir" type="number" min="0" max="359" value="90"></div><div><label>Velocidad</label><input id="windManualSpeed" type="number" value="10"></div><div><label>Ráfaga</label><input id="windManualGust" type="number"></div><div><label>Observación</label><input id="windManualNote" placeholder="Estimado por manga"></div></div><button class="secondary wide" id="useManualWind" style="margin-top:8px">Usar ingreso manual</button></div>
+<div class="wind-card active"><h3>Fuente activa</h3><div class="wind-value" id="windActiveDir">—</div><div class="wind-sub" id="windActiveText">Sin fuente activa</div><div class="wind-sub" id="windActiveTime"></div></div>
+</div></div>
+<div class="card"><h2>Corrección rápida</h2><div class="wind-controls"><button class="secondary" data-wind-adjust="-5">−5°</button><button class="secondary" data-wind-adjust="-1">−1°</button><button class="secondary" data-wind-adjust="1">+1°</button><button class="secondary" data-wind-adjust="5">+5°</button></div><div class="compass"><div class="dir n">N</div><div class="dir e">E</div><div class="dir s">S</div><div class="dir w">O</div><div class="compass-needle" id="windNeedle"></div><div class="compass-center"></div></div><div class="actions"><button class="primary" id="applyWindToMap">Aplicar al mapa</button><button class="secondary" id="saveWindState">Guardar viento</button></div></div>
+<div class="card"><h2>Pronóstico de dirección</h2><div id="windForecast" class="wind-forecast"><div class="small">Sin pronóstico disponible.</div></div><div id="windChangeAlert" class="wind-alert" style="display:none;margin-top:10px"></div></div>
+<div class="card"><h2>Historial</h2><div id="windHistory" class="wind-history"><div class="small">Sin registros.</div></div><div class="actions" style="margin-top:10px"><button class="secondary" id="exportWindHistory">Exportar historial</button><button class="danger" id="clearWindHistory">Limpiar historial</button></div></div>
+</section>
 <section id="history" class="view">
 <div class="card">
 <h2>Incidentes guardados</h2>
